@@ -8,7 +8,7 @@ A personal, local-first tool that helps you go from "found a job listing" to "su
 2. **Tailor** applications using an OpenAI-compatible API — generates professional summaries, cover letters, and screening-question answers
 3. **Review** everything in a UI with confidence indicators and inline editing
 4. **Fill** web form fields only after explicit user approval
-5. **Persist** every application to a local PostgreSQL database for search and analysis
+5. **Persist** every application to a local database for search and analysis
 
 **Non-goals:** fully autonomous applying, multi-tenancy, external network exposure. Everything runs on localhost.
 
@@ -39,7 +39,7 @@ A personal, local-first tool that helps you go from "found a job listing" to "su
 │  └───────────────────────┬───────────────────────────┘   │
 │                          │                               │
 │  ┌───────────────────────┴───────────────────────────┐   │
-│  │           TypeORM + PostgreSQL 16                  │   │
+│  │              TypeORM + local database               │   │
 │  └───────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -49,7 +49,7 @@ A personal, local-first tool that helps you go from "found a job listing" to "su
 | Layer | Technology |
 |-------|-----------|
 | Backend | NestJS (TypeScript), TypeORM |
-| Database | PostgreSQL 16 |
+| Database | Local (via TypeORM) |
 | Extension | TypeScript, Preact, Vite (Manifest V3) |
 | AI | OpenAI-compatible API (via OpenAI SDK) |
 | Validation | class-validator, class-transformer |
@@ -60,7 +60,7 @@ A personal, local-first tool that helps you go from "found a job listing" to "su
 
 - **Node.js** ≥ 22
 - **pnpm** ≥ 9
-- **Docker** and **Docker Compose** (for PostgreSQL)
+- **Docker** and **Docker Compose** (for the database)
 - An **API key** for an OpenAI-compatible provider (e.g., [DeepSeek](https://platform.deepseek.com), [OpenAI](https://platform.openai.com))
 
 ## Quick Start
@@ -93,7 +93,7 @@ DB_NAME=jobhunter
 ### 3. Start the database
 
 ```bash
-docker compose up -d postgres
+docker compose up -d
 ```
 
 ### 4. Start the backend
@@ -143,7 +143,7 @@ job-hunter-agent/
 ├── prompts/              # LLM prompt templates (.md)
 ├── docs/                 # Specs and roadmap
 ├── memory-bank/          # Project context and progress tracking
-└── docker-compose.yml    # PostgreSQL + backend containers
+└── docker-compose.yml    # Database + backend containers
 ```
 
 ## API Endpoints
@@ -204,8 +204,8 @@ pnpm build
 |----------|---------|-------------|
 | `DEEPSEEK_API_KEY` | — | API key for OpenAI-compatible provider (required) |
 | `DEEPSEEK_MODEL` | `deepseek-chat` | Model name to use for generation |
-| `DB_HOST` | `localhost` | PostgreSQL host |
-| `DB_PORT` | `5433` | PostgreSQL port |
+| `DB_HOST` | `localhost` | Database host |
+| `DB_PORT` | `5433` | Database port |
 | `DB_USER` | `jobhunter` | Database user |
 | `DB_PASSWORD` | `jobhunter` | Database password |
 | `DB_NAME` | `jobhunter` | Database name |
