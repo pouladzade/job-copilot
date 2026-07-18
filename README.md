@@ -15,46 +15,46 @@ A personal, local-first tool that helps you go from "found a job listing" to "su
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      Browser Extension                  │
-│  ┌──────────┐  ┌──────────┐  ┌──────────────────────┐  │
-│  │  Popup   │  │ Content  │  │      Adapters         │  │
-│  │ (Preact) │  │  Script  │  │  (greenhouse, lever,  │  │
-│  │          │  │          │  │   ashby, indeed, ...)  │  │
-│  └────┬─────┘  └────┬─────┘  └──────────┬───────────┘  │
+┌───────────────────────────────────────────────────────── ┐
+│                      Browser Extension                   │
+│  ┌──────────┐  ┌──────────┐  ┌──────────────────────┐    │
+│  │  Popup   │  │ Content  │  │      Adapters        │    │
+│  │ (Preact) │  │  Script  │  │  (greenhouse, lever, │    │
+│  │          │  │          │  │   ashby, indeed, ...)│    │
+│  └────┬─────┘  └────┬─────┘  └──────────┬───────────┘    │
 │       │             │                    │               │
 └───────┼─────────────┼────────────────────┼───────────────┘
         │             │                    │
         ▼             ▼                    ▼
 ┌─────────────────────────────────────────────────────────┐
-│                  NestJS Backend (localhost:4001)         │
-│  ┌───────────┐  ┌──────────┐  ┌────────────────────┐   │
-│  │Application│  │ DeepSeek │  │     Resume         │   │
-│  │ Controller│  │ Service  │  │    Management       │   │
-│  └─────┬─────┘  └────┬─────┘  └─────────┬──────────┘   │
-│        │              │                  │               │
-│  ┌─────┴──────────────┴──────────────────┴──────────┐   │
-│  │              ApplicationService                   │   │
-│  │     (orchestrator: PII → generate → validate)     │   │
-│  └───────────────────────┬───────────────────────────┘   │
-│                          │                               │
-│  ┌───────────────────────┴───────────────────────────┐   │
-│  │              TypeORM + local database               │   │
-│  └───────────────────────────────────────────────────┘   │
+│                  NestJS Backend (localhost:4001)        │
+│  ┌───────────┐  ┌──────────┐  ┌────────────────────┐    │
+│  │Application│  │ LLM      │  │     Resume         │    │
+│  │ Controller│  │ Service  │  │    Management      │    │
+│  └─────┬─────┘  └────┬─────┘  └─────────┬──────────┘    │
+│        │              │                  │              │
+│  ┌─────┴──────────────┴──────────────────┴─────────-─┐  │
+│  │              ApplicationService                   │  │
+│  │     (orchestrator: PII → generate → validate)     │  │
+│  └───────────────────────┬───────────────────────────┘  │
+│                          │                              │
+│  ┌───────────────────────┴───────────────────────────┐  │
+│  │              TypeORM + local database             │  │
+│  └───────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
 ```
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | NestJS (TypeScript), TypeORM |
-| Database | Local (via TypeORM) |
-| Extension | TypeScript, Preact, Vite (Manifest V3) |
-| AI | OpenAI-compatible API (via OpenAI SDK) |
-| Validation | class-validator, class-transformer |
-| Package manager | pnpm (workspaces) |
-| Containerization | Docker Compose |
+| Layer            | Technology                             |
+| ---------------- | -------------------------------------- |
+| Backend          | NestJS (TypeScript), TypeORM           |
+| Database         | Local (via TypeORM)                    |
+| Extension        | TypeScript, Preact, Vite (Manifest V3) |
+| AI               | OpenAI-compatible API (via OpenAI SDK) |
+| Validation       | class-validator, class-transformer     |
+| Package manager  | pnpm (workspaces)                      |
+| Containerization | Docker Compose                         |
 
 ## Prerequisites
 
@@ -82,7 +82,7 @@ cp .env.example .env
 Edit `.env` and add your API key:
 
 ```
-DEEPSEEK_API_KEY=sk-your-key-here
+LLM_API_KEY=sk-your-key-here
 DB_HOST=localhost
 DB_PORT=5433
 DB_USER=jobhunter
@@ -126,7 +126,7 @@ job-hunter-agent/
 │   ├── backend/          # NestJS API server
 │   │   └── src/
 │   │       ├── application/   # CRUD + generate orchestration
-│   │       ├── deepseek/      # DeepSeek API client
+│   │       ├── llm/           # OpenAI-compatible API client
 │   │       ├── database/      # TypeORM entities + migrations
 │   │       ├── prompts/       # Prompt template builder
 │   │       ├── resume/        # Resume loader, merger, indexer
@@ -148,14 +148,14 @@ job-hunter-agent/
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/applications/health` | Health check |
-| `POST` | `/applications/generate` | Generate tailored application draft |
-| `POST` | `/applications/:id/save` | Save user-edited draft |
-| `GET` | `/applications` | List with filters + pagination |
-| `PATCH` | `/applications/:id/status` | Update application status |
-| `POST` | `/resumes/refresh-index` | Regenerate resume keyword index |
+| Method  | Path                       | Description                         |
+| ------- | -------------------------- | ----------------------------------- |
+| `GET`   | `/applications/health`     | Health check                        |
+| `POST`  | `/applications/generate`   | Generate tailored application draft |
+| `POST`  | `/applications/:id/save`   | Save user-edited draft              |
+| `GET`   | `/applications`            | List with filters + pagination      |
+| `PATCH` | `/applications/:id/status` | Update application status           |
+| `POST`  | `/resumes/refresh-index`   | Regenerate resume keyword index     |
 
 ## Development
 
@@ -200,17 +200,18 @@ pnpm build
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DEEPSEEK_API_KEY` | — | API key for OpenAI-compatible provider (required) |
-| `DEEPSEEK_MODEL` | `deepseek-chat` | Model name to use for generation |
-| `DB_HOST` | `localhost` | Database host |
-| `DB_PORT` | `5433` | Database port |
-| `DB_USER` | `jobhunter` | Database user |
-| `DB_PASSWORD` | `jobhunter` | Database password |
-| `DB_NAME` | `jobhunter` | Database name |
-| `DATA_DIR` | *(auto-resolved)* | Override path to `data/` |
-| `PROMPTS_DIR` | *(auto-resolved)* | Override path to `prompts/` |
+| Variable           | Default           | Description                                       |
+| ------------------ | ----------------- | ------------------------------------------------- |
+| `LLM_API_KEY`      | —                                                    | API key for OpenAI-compatible provider (required) |
+| `LLM_BASE_URL`     | `https://api.deepseek.com/v1`                        | Base URL for the OpenAI-compatible API            |
+| `LLM_MODEL`        | `deepseek-chat`                                      | Model name to use for generation                  |
+| `DB_HOST`          | `localhost`       | Database host                                     |
+| `DB_PORT`          | `5433`            | Database port                                     |
+| `DB_USER`          | `jobhunter`       | Database user                                     |
+| `DB_PASSWORD`      | `jobhunter`       | Database password                                 |
+| `DB_NAME`          | `jobhunter`       | Database name                                     |
+| `DATA_DIR`         | _(auto-resolved)_ | Override path to `data/`                          |
+| `PROMPTS_DIR`      | _(auto-resolved)_ | Override path to `prompts/`                       |
 
 ## Design Principles
 

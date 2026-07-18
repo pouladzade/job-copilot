@@ -16,7 +16,7 @@ import {
 import type { JobPostingDto, ConfidenceTier, ApplicationStatus } from '@job-hunter/shared';
 import { Application } from '../database/entities/application.entity';
 import { TokenUsageLog } from '../database/entities/token-usage-log.entity';
-import { DeepSeekService, DeepSeekError, type TokenUsage } from '../deepseek/deepseek.service';
+import { LlmService, LlmError, type TokenUsage } from '../llm/llm.service';
 import { PromptBuilderService, type PromptContext } from '../prompts/prompt-builder.service';
 import { PiiFilterService } from '../validation/pii-filter.service';
 import { ResponseValidatorService } from '../validation/response-validator.service';
@@ -31,7 +31,7 @@ export class ApplicationService {
     private readonly applicationRepo: Repository<Application>,
     @InjectRepository(TokenUsageLog)
     private readonly tokenLogRepo: Repository<TokenUsageLog>,
-    private readonly deepseek: DeepSeekService,
+    private readonly llm: LlmService,
     private readonly prompts: PromptBuilderService,
     private readonly piiFilter: PiiFilterService,
     private readonly validator: ResponseValidatorService,
@@ -191,15 +191,15 @@ export class ApplicationService {
 
     // Step 4: Generate summary
     const tailorPrompt = this.prompts.buildTailorPrompt(promptContext);
-    const tailorResult = await this.callDeepseek(tailorPrompt);
+    const tailorResult = await this.callLlm(tailorPrompt);
 
     // Step 5: Generate cover letter
     const coverLetterPrompt = this.prompts.buildCoverLetterPrompt(promptContext);
-    const coverLetterResult = await this.callDeepseek(coverLetterPrompt);
+    const coverLetterResult = await this.callLlm(coverLetterPrompt);
 
     // Step 6: Generate screening answers
     const screeningPrompt = this.prompts.buildScreeningPrompt(promptContext);
-    const screeningResult = await this.callDeepseek(screeningPrompt);
+    const screeningResult = await this.callLlm(screeningPrompt);
 
     // Step 7: Combine results
     const combinedTokenUsage: TokenUsage = {
@@ -296,7 +296,7 @@ export class ApplicationService {
     return draft;
   }
 
-  private async callDeepseek(
+  private async callLlm(
     prompt: string,
   ): Promise<{ data: Record<string, unknown>; usage: TokenUsage }> {
     const messages: Array<{ role: 'system' | 'user'; content: string }> = [
@@ -304,7 +304,7 @@ export class ApplicationService {
     ];
 
     try {
-      const result = await this.deepseek.generateWithRetry(messages);
+      const result = await this.llm.generateWithRetry(messages);
 
       let parsed: Record<string, unknown>;
       try {
@@ -322,7 +322,7 @@ export class ApplicationService {
         throw error;
       }
 
-      if (error instanceof DeepSeekError) {
+      if (error instanceof LlmError) {
         throw new HttpException(
           { error: 'llm_unavailable', message: error.message, retryAfterSeconds: 30 },
           HTTP_STATUS.SERVICE_UNAVAILABLE,

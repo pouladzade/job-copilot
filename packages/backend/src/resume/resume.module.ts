@@ -3,10 +3,10 @@ import { ResumeLoaderService } from './resume-loader.service';
 import { ProfileMergeService } from './profile-merge.service';
 import { ResumeIndexService } from './resume-index.service';
 import { ResumeController } from './resume.controller';
-import { DeepseekModule } from '../deepseek/deepseek.module';
+import { LlmModule } from '../llm/llm.module';
 
 @Module({
-  imports: [DeepseekModule],
+  imports: [LlmModule],
   controllers: [ResumeController],
   providers: [ResumeLoaderService, ProfileMergeService, ResumeIndexService],
   exports: [ResumeLoaderService, ProfileMergeService, ResumeIndexService],

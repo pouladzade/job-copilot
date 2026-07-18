@@ -2,7 +2,7 @@ import { Controller, Post, HttpCode, HttpStatus, Inject } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ResumeLoaderService } from './resume-loader.service';
 import { ResumeIndexService } from './resume-index.service';
-import { DeepSeekService } from '../deepseek/deepseek.service';
+import { LlmService } from '../llm/llm.service';
 import { ResumeIndexResponseDto } from './dto/resume-index.dto';
 
 @ApiTags('resumes')
@@ -11,7 +11,7 @@ export class ResumeController {
   constructor(
     @Inject(ResumeLoaderService) private readonly resumeLoader: ResumeLoaderService,
     @Inject(ResumeIndexService) private readonly resumeIndex: ResumeIndexService,
-    @Inject(DeepSeekService) private readonly deepseek: DeepSeekService,
+    @Inject(LlmService) private readonly llm: LlmService,
   ) {}
 
   @Post('refresh-index')
@@ -28,7 +28,7 @@ export class ResumeController {
       const content = this.resumeLoader.loadResume(filename);
       const prompt = `Extract 8-12 keyword tags from this resume. Return ONLY a JSON array of strings, no markdown fences.\n\n${content}`;
 
-      const result = await this.deepseek.generateWithRetry([
+      const result = await this.llm.generateWithRetry([
         { role: 'user', content: prompt },
       ]);
 

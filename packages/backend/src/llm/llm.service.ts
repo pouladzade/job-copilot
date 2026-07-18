@@ -16,39 +16,41 @@ export interface TokenUsage {
   estimatedCostUsd: number;
 }
 
-export class DeepSeekError extends Error {
+export class LlmError extends Error {
   constructor(
     message: string,
     public readonly code: string,
     public readonly statusCode?: number,
   ) {
     super(message);
-    this.name = 'DeepSeekError';
+    this.name = 'LlmError';
   }
 }
 
 @Injectable()
-export class DeepSeekService {
+export class LlmService {
   private readonly client: OpenAI;
-  private readonly logger = new Logger(DeepSeekService.name);
+  private readonly logger = new Logger(LlmService.name);
   private readonly model: string;
 
   constructor() {
-    const apiKey = process.env['DEEPSEEK_API_KEY'];
+    const apiKey = process.env['LLM_API_KEY'] ?? process.env['DEEPSEEK_API_KEY'];
     if (apiKey === undefined || apiKey === '') {
-      this.logger.error('DEEPSEEK_API_KEY is not set in environment');
-      throw new Error('DEEPSEEK_API_KEY is required');
+      this.logger.error('LLM_API_KEY (or DEEPSEEK_API_KEY) is not set in environment');
+      throw new Error('LLM_API_KEY is required');
     }
+
+    const baseURL = process.env['LLM_BASE_URL'] ?? 'https://api.deepseek.com/v1';
 
     this.client = new OpenAI({
       apiKey,
-      baseURL: 'https://api.deepseek.com/v1',
+      baseURL,
       timeout: DEEPSEEK_TIMEOUT_MS,
       maxRetries: 0,
       fetch: globalThis.fetch,
     });
 
-    this.model = process.env['DEEPSEEK_MODEL'] ?? 'deepseek-chat';
+    this.model = process.env['LLM_MODEL'] ?? process.env['DEEPSEEK_MODEL'] ?? 'deepseek-chat';
   }
 
   async generateJson(
@@ -88,7 +90,7 @@ export class DeepSeekService {
         return await this.generateJson(messages, options);
       } catch (error: unknown) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        this.logger.warn(`DeepSeek API attempt ${attempt + 1} failed: ${lastError.message}`);
+        this.logger.warn(`LLM API attempt ${attempt + 1} failed: ${lastError.message}`);
 
         if (this.isRateLimitOrAuthError(error)) {
           break;
@@ -100,7 +102,7 @@ export class DeepSeekService {
       }
     }
 
-    throw lastError ?? new DeepSeekError('DeepSeek API call failed', 'UNKNOWN');
+    throw lastError ?? new LlmError('LLM API call failed', 'UNKNOWN');
   }
 
   private estimateCost(usage: Omit<TokenUsage, 'estimatedCostUsd'>): number {
