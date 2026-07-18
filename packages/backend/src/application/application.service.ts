@@ -201,12 +201,11 @@ export class ApplicationService {
     const screeningPrompt = this.prompts.buildScreeningPrompt(promptContext);
     const screeningResult = await this.callLlm(screeningPrompt);
 
-    // Step 7: Combine results
     const combinedTokenUsage: TokenUsage = {
       promptTokens: tailorResult.usage.promptTokens + coverLetterResult.usage.promptTokens + screeningResult.usage.promptTokens,
       completionTokens: tailorResult.usage.completionTokens + coverLetterResult.usage.completionTokens + screeningResult.usage.completionTokens,
       totalTokens: tailorResult.usage.totalTokens + coverLetterResult.usage.totalTokens + screeningResult.usage.totalTokens,
-      model: 'deepseek-chat',
+      model: tailorResult.usage.model,
       estimatedCostUsd: tailorResult.usage.estimatedCostUsd + coverLetterResult.usage.estimatedCostUsd + screeningResult.usage.estimatedCostUsd,
     };
 
@@ -311,7 +310,7 @@ export class ApplicationService {
         parsed = JSON.parse(result.content) as Record<string, unknown>;
       } catch {
         throw new HttpException(
-          { error: 'invalid_llm_response', message: 'DeepSeek returned unparseable JSON', rawResponse: result.content },
+          { error: 'invalid_llm_response', message: 'LLM returned unparseable JSON', rawResponse: result.content },
           HTTP_STATUS.BAD_GATEWAY,
         );
       }
@@ -330,7 +329,7 @@ export class ApplicationService {
       }
 
       throw new HttpException(
-        { error: 'llm_unavailable', message: 'DeepSeek API call failed' },
+        { error: 'llm_unavailable', message: 'LLM API call failed' },
         HTTP_STATUS.SERVICE_UNAVAILABLE,
       );
     }

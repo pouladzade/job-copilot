@@ -131,7 +131,7 @@ These are the specific ESLint rules that will BLOCK your code. You MUST follow t
 
 ## Security
 
-- DEEPSEEK_API_KEY in `.env` only — never committed, never sent to browser
+- LLM_API_KEY in `.env` only — never committed, never sent to browser
 - Backend binds to `127.0.0.1` only — never `0.0.0.0`
 - PII filter runs server-side before any data reaches DeepSeek
 - NEVER log API keys, tokens, or passwords

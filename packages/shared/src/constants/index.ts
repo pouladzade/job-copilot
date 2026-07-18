@@ -26,13 +26,13 @@ export const MAX_JOB_DESCRIPTION_LENGTH = 50000;
 
 export const MAX_RETRIES = 1;
 
-export const DEEPSEEK_TIMEOUT_MS = 30000;
+export const LLM_TIMEOUT_MS = 30000;
 
-export const DEEPSEEK_DEFAULT_TEMPERATURE = 0.4;
+export const LLM_DEFAULT_TEMPERATURE = 0.4;
 
-export const DEEPSEEK_DEFAULT_MAX_TOKENS = 1800;
+export const LLM_DEFAULT_MAX_TOKENS = 1800;
 
-export const DEEPSEEK_COST_PER_1K: Record<string, { prompt: number; completion: number }> = {
+export const LLM_COST_PER_1K: Record<string, { prompt: number; completion: number }> = {
   'deepseek-chat': { prompt: 0.00014, completion: 0.00028 },
   'deepseek-reasoner': { prompt: 0.00055, completion: 0.00219 },
 };

@@ -3,7 +3,7 @@
 **Version:** 2.0  
 **Status:** Ready for implementation  
 **Automation policy:** Human-in-the-loop (HITL). No auto-submit, ever.  
-**Last updated:** 2026-07-18  
+**Last updated:** 2026-07-18
 
 ---
 
@@ -38,6 +38,7 @@
 A personal, local-first tool that helps a job seeker go from "found a listing" to "submitted a tailored application" faster, while keeping a human in control of every meaningful action.
 
 **What it does:**
+
 - Scrapes a job posting from a supported site via a browser extension
 - Sends the posting + resume context to the DeepSeek API for tailoring
 - Generates a professional summary, resume bullet suggestions, cover letter, and screening-question answers
@@ -52,30 +53,32 @@ A personal, local-first tool that helps a job seeker go from "found a listing" t
 
 ## 2. Tech Stack
 
-| Layer | Technology | Rationale |
-|-------|-----------|-----------|
-| **Browser Extension** | TypeScript, Manifest V3, Preact (lightweight UI) | Type safety across the stack; Preact is ~3KB and sufficient for the Review UI |
-| **Backend** | NestJS (Node.js) + TypeScript | Opinionated, modular architecture; built-in validation (class-validator), Swagger/OpenAPI docs, excellent DI |
-| **Database** | PostgreSQL 16 | JSONB for screening answers, rich indexing for job-memory queries, reliable migrations |
-| **ORM** | Drizzle ORM | Type-safe, lightweight, SQL-like DX, good PostgreSQL support |
-| **LLM Client** | OpenAI Node.js SDK (pointed at DeepSeek base URL) | DeepSeek API is OpenAI-compatible |
-| **Validation** | class-validator + class-transformer (NestJS-native, shared across backend & extension) | Unified validation via decorators; DTOs live in `dto/` folders per module |
-| **API Documentation** | @nestjs/swagger (Swagger/OpenAPI) | Auto-generated from `@ApiProperty` decorators on all DTOs; available at `/api/docs` |
-| **Containerization** | Docker Compose | One-command local dev: `docker compose up` starts NestJS + PostgreSQL |
-| **Version Control** | GitHub | Source hosting, PR reviews, CI via GitHub Actions |
-| **CI/CD** | GitHub Actions | Lint (ESLint zero-warnings), type-check, test on PR; build extension zip on release tags |
-| **Package Manager** | pnpm | Fast, strict, disk-efficient; pnpm workspaces for monorepo |
-| **Linting** | ESLint + @typescript-eslint (`.eslintrc.cjs`) | Strict rules: `no-explicit-any`, `strict-boolean-expressions`, `explicit-function-return-type`, complexity ≤10, max-params ≤4, no-magic-numbers, import ordering, no-default-export |
-| **Formatting** | Prettier (`.prettierrc`) | Enforced by pre-commit hook; consistent code style |
-| **Git Hooks** | Husky + lint-staged + commitlint | Pre-commit: lint + format; commit-msg: conventional commits |
+| Layer                 | Technology                                                                             | Rationale                                                                                                                                                                           |
+| --------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Browser Extension** | TypeScript, Manifest V3, Preact (lightweight UI)                                       | Type safety across the stack; Preact is ~3KB and sufficient for the Review UI                                                                                                       |
+| **Backend**           | NestJS (Node.js) + TypeScript                                                          | Opinionated, modular architecture; built-in validation (class-validator), Swagger/OpenAPI docs, excellent DI                                                                        |
+| **Database**          | PostgreSQL 16                                                                          | JSONB for screening answers, rich indexing for job-memory queries, reliable migrations                                                                                              |
+| **ORM**               | Drizzle ORM                                                                            | Type-safe, lightweight, SQL-like DX, good PostgreSQL support                                                                                                                        |
+| **LLM Client**        | OpenAI Node.js SDK (pointed at DeepSeek base URL)                                      | DeepSeek API is OpenAI-compatible                                                                                                                                                   |
+| **Validation**        | class-validator + class-transformer (NestJS-native, shared across backend & extension) | Unified validation via decorators; DTOs live in `dto/` folders per module                                                                                                           |
+| **API Documentation** | @nestjs/swagger (Swagger/OpenAPI)                                                      | Auto-generated from `@ApiProperty` decorators on all DTOs; available at `/api/docs`                                                                                                 |
+| **Containerization**  | Docker Compose                                                                         | One-command local dev: `docker compose up` starts NestJS + PostgreSQL                                                                                                               |
+| **Version Control**   | GitHub                                                                                 | Source hosting, PR reviews, CI via GitHub Actions                                                                                                                                   |
+| **CI/CD**             | GitHub Actions                                                                         | Lint (ESLint zero-warnings), type-check, test on PR; build extension zip on release tags                                                                                            |
+| **Package Manager**   | pnpm                                                                                   | Fast, strict, disk-efficient; pnpm workspaces for monorepo                                                                                                                          |
+| **Linting**           | ESLint + @typescript-eslint (`.eslintrc.cjs`)                                          | Strict rules: `no-explicit-any`, `strict-boolean-expressions`, `explicit-function-return-type`, complexity ≤10, max-params ≤4, no-magic-numbers, import ordering, no-default-export |
+| **Formatting**        | Prettier (`.prettierrc`)                                                               | Enforced by pre-commit hook; consistent code style                                                                                                                                  |
+| **Git Hooks**         | Husky + lint-staged + commitlint                                                       | Pre-commit: lint + format; commit-msg: conventional commits                                                                                                                         |
 
 **Why NestJS over FastAPI (from the original draft):**
+
 - Unified TypeScript across extension and backend — shared types, schemas, and validation logic in a monorepo
 - NestJS modules map cleanly to the component boundaries in this architecture (Extension module, DeepSeek module, Application module, Resume module)
 - Built-in OpenAPI/Swagger generation for API docs
 - Strong ecosystem for PostgreSQL integration (Drizzle via `@nestjs/config`)
 
 **Why PostgreSQL over SQLite:**
+
 - JSONB column type for `screening_answers` — queryable, indexable, no string parsing
 - Full-text search for job descriptions and cover letters (`tsvector`)
 - Proper migration tooling (Drizzle Kit)
@@ -181,6 +184,7 @@ A personal, local-first tool that helps a job seeker go from "found a listing" t
 ### 4.1 Browser Extension
 
 #### 4.1.1 Responsibilities
+
 - Detect supported job site via URL pattern matching against registered adapters
 - **Scoped DOM scraping:** target only the job description container, never the full page (prevents accidental PII extraction from nav/sidebar/profile elements)
 - Normalize raw fields into a validated `JobPosting` (using class-validator + class-transformer, importing shared DTOs)
@@ -206,7 +210,7 @@ interface SiteAdapter {
 
 interface FormField {
   label: string;
-  type: "text" | "textarea" | "select" | "radio" | "checkbox";
+  type: 'text' | 'textarea' | 'select' | 'radio' | 'checkbox';
   selector: string;
   maxLength?: number;
 }
@@ -215,7 +219,7 @@ interface RawScrape {
   title: string;
   company: string;
   location: string;
-  description: string;  // combined description + requirements
+  description: string; // combined description + requirements
   sourceUrl: string;
 }
 ```
@@ -235,20 +239,20 @@ export function findAdapter(url: string): SiteAdapter | undefined {
 
 ```typescript
 // adapters/greenhouse.adapter.ts
-import { registerAdapter, SiteAdapter } from "./registry";
+import { registerAdapter, SiteAdapter } from './registry';
 
 registerAdapter({
-  id: "greenhouse",
-  matches: (url) => url.includes("greenhouse.io"),
+  id: 'greenhouse',
+  matches: (url) => url.includes('greenhouse.io'),
   scrapeJobPosting: () => {
     // scoped to job description container only
-    const container = document.querySelector("#content");
-    if (!container) throw new Error("Job content container not found");
+    const container = document.querySelector('#content');
+    if (!container) throw new Error('Job content container not found');
     return {
-      title: container.querySelector(".app-title")?.textContent ?? "",
-      company: container.querySelector(".company-name")?.textContent ?? "",
-      location: container.querySelector(".location")?.textContent ?? "",
-      description: container.querySelector("#content")?.textContent ?? "",
+      title: container.querySelector('.app-title')?.textContent ?? '',
+      company: container.querySelector('.company-name')?.textContent ?? '',
+      location: container.querySelector('.location')?.textContent ?? '',
+      description: container.querySelector('#content')?.textContent ?? '',
       sourceUrl: window.location.href,
     };
   },
@@ -260,13 +264,14 @@ registerAdapter({
     const el = document.querySelector(field.selector);
     if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
       el.value = value;
-      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event('input', { bubbles: true }));
     }
   },
 });
 ```
 
 **Adapter build order (by HTML stability, not popularity):**
+
 1. Greenhouse (semantic, stable)
 2. Lever (semantic, stable)
 3. Ashby (semantic, stable)
@@ -384,7 +389,7 @@ src/
 ├── main.ts                          # Bootstrap, CORS config
 ├── app.module.ts
 ├── config/
-│   ├── deepseek.config.ts           # DEEPSEEK_API_KEY, base URL, defaults
+│   ├── deepseek.config.ts           # LLM_API_KEY, base URL, defaults
 │   └── app.config.ts                # Port, CORS origins, size limits
 ├── application/
 │   ├── application.module.ts
@@ -434,25 +439,25 @@ src/
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: [/^chrome-extension:\/\//],  // Allow all extension IDs
-    methods: ["GET", "POST", "PATCH"],
+    origin: [/^chrome-extension:\/\//], // Allow all extension IDs
+    methods: ['GET', 'POST', 'PATCH'],
     maxAge: 86400,
   });
   // Request size limit
-  app.use(json({ limit: "50kb" }));
-  await app.listen(3000, "127.0.0.1");  // localhost only, never 0.0.0.0
+  app.use(json({ limit: '50kb' }));
+  await app.listen(3000, '127.0.0.1'); // localhost only, never 0.0.0.0
 }
 ```
 
 #### 4.2.3 Endpoints
 
-| Method | Path | Request Body | Response | Purpose |
-|--------|------|-------------|----------|---------|
-| POST | `/applications/generate` | `JobPosting` + optional `resumeHint` | `ApplicationDraft` | Generates tailored content |
-| POST | `/applications/:id/save` | Edited `ApplicationDraft` + `status` | `{ id, savedAt }` | Persists user edits |
-| GET | `/applications` | Query: `?company=&status=&resumeVersion=&page=&limit=` | `{ applications, total, page }` | Lists past applications |
-| PATCH | `/applications/:id/status` | `{ status }` | `{ id, status, updatedAt }` | Updates application status |
-| POST | `/resumes/refresh-index` | — | `{ tags }` | Re-generates resume index tags via DeepSeek |
+| Method | Path                       | Request Body                                           | Response                        | Purpose                                     |
+| ------ | -------------------------- | ------------------------------------------------------ | ------------------------------- | ------------------------------------------- |
+| POST   | `/applications/generate`   | `JobPosting` + optional `resumeHint`                   | `ApplicationDraft`              | Generates tailored content                  |
+| POST   | `/applications/:id/save`   | Edited `ApplicationDraft` + `status`                   | `{ id, savedAt }`               | Persists user edits                         |
+| GET    | `/applications`            | Query: `?company=&status=&resumeVersion=&page=&limit=` | `{ applications, total, page }` | Lists past applications                     |
+| PATCH  | `/applications/:id/status` | `{ status }`                                           | `{ id, status, updatedAt }`     | Updates application status                  |
+| POST   | `/resumes/refresh-index`   | —                                                      | `{ tags }`                      | Re-generates resume index tags via DeepSeek |
 
 #### 4.2.4 Orchestrator Flow (POST /applications/generate)
 
@@ -483,71 +488,61 @@ async function bootstrap() {
 
 ```typescript
 // src/database/schema.ts
-import {
-  pgTable,
-  serial,
-  varchar,
-  text,
-  jsonb,
-  timestamp,
-  real,
-  integer,
-  index,
-} from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, jsonb, timestamp, real, integer, index } from 'drizzle-orm/pg-core';
 
 export const applications = pgTable(
-  "applications",
+  'applications',
   {
-    id: serial("id").primaryKey(),
-    schemaVersion: integer("schema_version").notNull().default(1),
-    company: varchar("company", { length: 200 }).notNull(),
-    role: varchar("role", { length: 300 }).notNull(),
-    location: varchar("location", { length: 200 }),
-    sourceUrl: varchar("source_url", { length: 2048 }).notNull().unique(),
-    sourceSite: varchar("source_site", { length: 50 }).notNull(),
-    resumeUsed: varchar("resume_used", { length: 100 }).notNull(),
-    resumeSelectionReason: varchar("resume_selection_reason", { length: 50 }).notNull(),
-    resumeSummary: text("resume_summary"),
-    coverLetter: text("cover_letter"),
-    screeningAnswers: jsonb("screening_answers").$type<ScreeningAnswer[]>(),
-    overallConfidence: real("overall_confidence"),
-    status: varchar("status", { length: 20 }).notNull().default("draft"),
+    id: serial('id').primaryKey(),
+    schemaVersion: integer('schema_version').notNull().default(1),
+    company: varchar('company', { length: 200 }).notNull(),
+    role: varchar('role', { length: 300 }).notNull(),
+    location: varchar('location', { length: 200 }),
+    sourceUrl: varchar('source_url', { length: 2048 }).notNull().unique(),
+    sourceSite: varchar('source_site', { length: 50 }).notNull(),
+    resumeUsed: varchar('resume_used', { length: 100 }).notNull(),
+    resumeSelectionReason: varchar('resume_selection_reason', { length: 50 }).notNull(),
+    resumeSummary: text('resume_summary'),
+    coverLetter: text('cover_letter'),
+    screeningAnswers: jsonb('screening_answers').$type<ScreeningAnswer[]>(),
+    overallConfidence: real('overall_confidence'),
+    status: varchar('status', { length: 20 }).notNull().default('draft'),
     // 'draft' | 'submitted' | 'interview' | 'offer' | 'rejected' | 'withdrawn'
-    notes: text("notes"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    notes: text('notes'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => ({
-    companyIdx: index("idx_applications_company").on(table.company),
-    statusIdx: index("idx_applications_status").on(table.status),
-    resumeUsedIdx: index("idx_applications_resume_used").on(table.resumeUsed),
-    createdAtIdx: index("idx_applications_created_at").on(table.createdAt),
+    companyIdx: index('idx_applications_company').on(table.company),
+    statusIdx: index('idx_applications_status').on(table.status),
+    resumeUsedIdx: index('idx_applications_resume_used').on(table.resumeUsed),
+    createdAtIdx: index('idx_applications_created_at').on(table.createdAt),
     // Full-text search index for description queries
-    searchIdx: index("idx_applications_search").using(
-      "gin",
+    searchIdx: index('idx_applications_search').using(
+      'gin',
       // Will be built via a generated tsvector column in migration
     ),
-  })
+  }),
 );
 
-export const tokenUsageLog = pgTable("token_usage_log", {
-  id: serial("id").primaryKey(),
-  applicationId: integer("application_id").references(() => applications.id),
-  model: varchar("model", { length: 50 }).notNull(),
-  promptTokens: integer("prompt_tokens").notNull(),
-  completionTokens: integer("completion_tokens").notNull(),
-  totalTokens: integer("total_tokens").notNull(),
-  estimatedCostUsd: real("estimated_cost_usd").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const tokenUsageLog = pgTable('token_usage_log', {
+  id: serial('id').primaryKey(),
+  applicationId: integer('application_id').references(() => applications.id),
+  model: varchar('model', { length: 50 }).notNull(),
+  promptTokens: integer('prompt_tokens').notNull(),
+  completionTokens: integer('completion_tokens').notNull(),
+  totalTokens: integer('total_tokens').notNull(),
+  estimatedCostUsd: real('estimated_cost_usd').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 // Types
 interface ScreeningAnswer {
-  questionId: string;    // hash of question text for stable mapping
+  questionId: string; // hash of question text for stable mapping
   question: string;
   answer: string;
-  confidence: number;    // 0.0–1.0
-  confidenceTier: "low" | "medium" | "high";
+  confidence: number; // 0.0–1.0
+  confidenceTier: 'low' | 'medium' | 'high';
 }
 ```
 
@@ -555,16 +550,16 @@ interface ScreeningAnswer {
 
 ```typescript
 // src/database/database.module.ts
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
 
 const pool = new Pool({
-  host: process.env.DB_HOST ?? "localhost",
-  port: parseInt(process.env.DB_PORT ?? "5432"),
-  user: process.env.DB_USER ?? "jobhunter",
-  password: process.env.DB_PASSWORD ?? "jobhunter",
-  database: process.env.DB_NAME ?? "jobhunter",
-  max: 5,  // low pool size for single-user local tool
+  host: process.env.DB_HOST ?? 'localhost',
+  port: parseInt(process.env.DB_PORT ?? '5432'),
+  user: process.env.DB_USER ?? 'jobhunter',
+  password: process.env.DB_PASSWORD ?? 'jobhunter',
+  database: process.env.DB_NAME ?? 'jobhunter',
+  max: 5, // low pool size for single-user local tool
 });
 
 export const db = drizzle(pool);
@@ -576,9 +571,9 @@ export const db = drizzle(pool);
 
 ```typescript
 // src/deepseek/deepseek.service.ts
-import { Injectable, Logger } from "@nestjs/common";
-import OpenAI from "openai";
-import { ConfigService } from "@nestjs/config";
+import { Injectable, Logger } from '@nestjs/common';
+import OpenAI from 'openai';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class DeepSeekService {
@@ -587,21 +582,21 @@ export class DeepSeekService {
 
   constructor(private config: ConfigService) {
     this.client = new OpenAI({
-      apiKey: this.config.get<string>("DEEPSEEK_API_KEY"),
-      baseURL: "https://api.deepseek.com/v1",
+      apiKey: this.config.get<string>('LLM_API_KEY'),
+      baseURL: 'https://api.deepseek.com/v1',
       timeout: 30000,
-      maxRetries: 0,  // We handle retries ourselves
+      maxRetries: 0, // We handle retries ourselves
     });
   }
 
   async generateJson(
     messages: OpenAI.ChatCompletionMessageParam[],
-    options?: { temperature?: number; maxTokens?: number }
+    options?: { temperature?: number; maxTokens?: number },
   ): Promise<{ content: string; usage: TokenUsage }> {
     const response = await this.client.chat.completions.create({
-      model: "deepseek-chat",
+      model: 'deepseek-chat',
       messages,
-      response_format: { type: "json_object" },
+      response_format: { type: 'json_object' },
       temperature: options?.temperature ?? 0.4,
       max_tokens: options?.maxTokens ?? 1800,
     });
@@ -610,18 +605,18 @@ export class DeepSeekService {
       promptTokens: response.usage?.prompt_tokens ?? 0,
       completionTokens: response.usage?.completion_tokens ?? 0,
       totalTokens: response.usage?.total_tokens ?? 0,
-      model: "deepseek-chat",
+      model: 'deepseek-chat',
     };
 
     return {
-      content: response.choices[0]?.message?.content ?? "",
+      content: response.choices[0]?.message?.content ?? '',
       usage,
     };
   }
 
   async generateWithRetry(
     messages: OpenAI.ChatCompletionMessageParam[],
-    options?: { temperature?: number; maxTokens?: number }
+    options?: { temperature?: number; maxTokens?: number },
   ): Promise<{ content: string; usage: TokenUsage }> {
     const maxRetries = 1;
     let lastError: Error | null = null;
@@ -631,9 +626,7 @@ export class DeepSeekService {
         return await this.generateJson(messages, options);
       } catch (error) {
         lastError = error as Error;
-        this.logger.warn(
-          `DeepSeek API attempt ${attempt + 1} failed: ${lastError.message}`
-        );
+        this.logger.warn(`DeepSeek API attempt ${attempt + 1} failed: ${lastError.message}`);
         // Don't retry on 4xx errors (bad request, auth, rate limit)
         if (isRateLimitOrAuthError(error)) break;
         if (attempt < maxRetries) {
@@ -642,7 +635,7 @@ export class DeepSeekService {
       }
     }
 
-    throw lastError ?? new Error("DeepSeek API call failed");
+    throw lastError ?? new Error('DeepSeek API call failed');
   }
 
   private delay(ms: number): Promise<void> {
@@ -663,16 +656,13 @@ interface TokenUsage {
 ```typescript
 // DeepSeek pricing (as of 2026)
 const COST_PER_1K: Record<string, { prompt: number; completion: number }> = {
-  "deepseek-chat": { prompt: 0.00014, completion: 0.00028 },
-  "deepseek-reasoner": { prompt: 0.00055, completion: 0.00219 },
+  'deepseek-chat': { prompt: 0.00014, completion: 0.00028 },
+  'deepseek-reasoner': { prompt: 0.00055, completion: 0.00219 },
 };
 
 function estimateCost(usage: TokenUsage): number {
-  const rates = COST_PER_1K[usage.model] ?? COST_PER_1K["deepseek-chat"];
-  return (
-    (usage.promptTokens / 1000) * rates.prompt +
-    (usage.completionTokens / 1000) * rates.completion
-  );
+  const rates = COST_PER_1K[usage.model] ?? COST_PER_1K['deepseek-chat'];
+  return (usage.promptTokens / 1000) * rates.prompt + (usage.completionTokens / 1000) * rates.completion;
 }
 ```
 
@@ -684,12 +674,12 @@ Every API call logs to `token_usage_log` and attaches `token_usage` to the `Appl
 
 The Review UI has four distinct states:
 
-| State | Trigger | UI |
-|-------|---------|-----|
+| State       | Trigger                                              | UI                                                                                                                                       |
+| ----------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | **Loading** | After scraping, waiting for `/applications/generate` | Skeleton cards with shimmer animation, "Tailoring your application..." status text. Section outline visible so user knows what's coming. |
-| **Error** | API unreachable, timeout, or bad JSON | Retry button with countdown (30s cooldown), raw-response viewer for manual salvage, "Regenerate" option |
-| **Ready** | Valid `ApplicationDraft` received | Full Review UI with all sections, edit buttons, confidence indicators |
-| **Filled** | User clicked "Fill Form" | Confirmation banner, "Revert to original" button visible |
+| **Error**   | API unreachable, timeout, or bad JSON                | Retry button with countdown (30s cooldown), raw-response viewer for manual salvage, "Regenerate" option                                  |
+| **Ready**   | Valid `ApplicationDraft` received                    | Full Review UI with all sections, edit buttons, confidence indicators                                                                    |
+| **Filled**  | User clicked "Fill Form"                             | Confirmation banner, "Revert to original" button visible                                                                                 |
 
 #### 4.5.2 UI Layout
 
@@ -743,11 +733,11 @@ The Review UI has four distinct states:
 
 #### 4.5.3 Confidence Tier Display
 
-| Tier | Range | Icon | Color | Meaning |
-|------|-------|------|-------|---------|
-| High | 0.7–1.0 | 🟢 | Green | Generated, likely accurate — review recommended |
-| Medium | 0.3–0.7 | 🟡 | Yellow | Generated with some uncertainty — review strongly recommended |
-| Low | 0.0–0.3 | 🔴 | Red | Generated with high uncertainty — must review before use |
+| Tier   | Range   | Icon | Color  | Meaning                                                       |
+| ------ | ------- | ---- | ------ | ------------------------------------------------------------- |
+| High   | 0.7–1.0 | 🟢   | Green  | Generated, likely accurate — review recommended               |
+| Medium | 0.3–0.7 | 🟡   | Yellow | Generated with some uncertainty — review strongly recommended |
+| Low    | 0.0–0.3 | 🔴   | Red    | Generated with high uncertainty — must review before use      |
 
 The underlying float is stored; the tier is computed on display.
 
@@ -777,14 +767,15 @@ interface JobPosting {
   title: string;
   company: string;
   location: string;
-  description: string;           // combined description + requirements
+  description: string; // combined description + requirements
   sourceUrl: string;
-  sourceSite: string;            // free-form adapter.id (e.g., "greenhouse", "linkedin")
-  resumeHint?: string | null;    // optional explicit resume selection
+  sourceSite: string; // free-form adapter.id (e.g., "greenhouse", "linkedin")
+  resumeHint?: string | null; // optional explicit resume selection
 }
 ```
 
 **Changes from v1 spec:**
+
 - Removed `requirements` field (redundant — description covers it)
 - `sourceSite` is now a free-form string, not a hard enum
 - Added `schemaVersion` for future migration support
@@ -798,12 +789,12 @@ interface ApplicationDraft {
   resumeSummary: string;
   coverLetter: string;
   screeningAnswers: ScreeningAnswer[];
-  missingInformation: string[];      // Questions the model couldn't answer
-  overallConfidence: number;         // 0.0–1.0
-  overallConfidenceTier: "low" | "medium" | "high";
-  resumeUsed: string;                // e.g., "backend.md"
-  resumeSelectionReason: "auto-matched" | "user-selected" | "last-used-for-company";
-  generatedAt: string;               // ISO 8601
+  missingInformation: string[]; // Questions the model couldn't answer
+  overallConfidence: number; // 0.0–1.0
+  overallConfidenceTier: 'low' | 'medium' | 'high';
+  resumeUsed: string; // e.g., "backend.md"
+  resumeSelectionReason: 'auto-matched' | 'user-selected' | 'last-used-for-company';
+  generatedAt: string; // ISO 8601
   tokenUsage: {
     promptTokens: number;
     completionTokens: number;
@@ -813,15 +804,16 @@ interface ApplicationDraft {
 }
 
 interface ScreeningAnswer {
-  questionId: string;    // hash of question text (SHA-256, first 8 hex chars)
+  questionId: string; // hash of question text (SHA-256, first 8 hex chars)
   question: string;
   answer: string;
-  confidence: number;    // 0.0–1.0
-  confidenceTier: "low" | "medium" | "high";
+  confidence: number; // 0.0–1.0
+  confidenceTier: 'low' | 'medium' | 'high';
 }
 ```
 
 **Changes from v1 spec:**
+
 - Added `schemaVersion`
 - Added `questionId` to `ScreeningAnswer` for stable form-field mapping
 - Added `confidenceTier` alongside raw `confidence` float
@@ -840,14 +832,14 @@ interface ApplicationRecord {
   location: string | null;
   sourceUrl: string;
   sourceSite: string;
-  jobDescription: string;           // original scraped description, stored for reference
+  jobDescription: string; // original scraped description, stored for reference
   resumeUsed: string;
   resumeSelectionReason: string;
-  resumeSummary: string | null;     // user-edited final version
-  coverLetter: string | null;       // user-edited final version
+  resumeSummary: string | null; // user-edited final version
+  coverLetter: string | null; // user-edited final version
   screeningAnswers: ScreeningAnswer[] | null;
   overallConfidence: number | null;
-  status: "draft" | "submitted" | "interview" | "offer" | "rejected" | "withdrawn";
+  status: 'draft' | 'submitted' | 'interview' | 'offer' | 'rejected' | 'withdrawn';
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -863,6 +855,7 @@ The `applications` table stores the **user-edited** version (what was actually s
 ### 6.1 `POST /applications/generate`
 
 **Request:**
+
 ```json
 {
   "schemaVersion": 1,
@@ -877,6 +870,7 @@ The `applications` table stores the **user-edited** version (what was actually s
 ```
 
 **Success Response (201):**
+
 ```json
 {
   "schemaVersion": 1,
@@ -907,6 +901,7 @@ The `applications` table stores the **user-edited** version (what was actually s
 ```
 
 **Conflict Response (409 — duplicate URL):**
+
 ```json
 {
   "error": "duplicate_url",
@@ -917,6 +912,7 @@ The `applications` table stores the **user-edited** version (what was actually s
 ```
 
 **Error Response (502 — DeepSeek returned invalid JSON after retry):**
+
 ```json
 {
   "error": "invalid_llm_response",
@@ -927,6 +923,7 @@ The `applications` table stores the **user-edited** version (what was actually s
 ```
 
 **Error Response (503 — DeepSeek unreachable):**
+
 ```json
 {
   "error": "llm_unavailable",
@@ -938,17 +935,21 @@ The `applications` table stores the **user-edited** version (what was actually s
 ### 6.2 `POST /applications/:id/save`
 
 **Request:**
+
 ```json
 {
   "status": "submitted",
   "resumeSummary": "user-edited summary...",
   "coverLetter": "user-edited cover letter...",
-  "screeningAnswers": [ /* user-edited answers */ ],
+  "screeningAnswers": [
+    /* user-edited answers */
+  ],
   "notes": "Applied via referral from Jane Smith"
 }
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": 1,
@@ -968,9 +969,12 @@ The `applications` table stores the **user-edited** version (what was actually s
 | `limit` | number | 20 | Items per page (max 100) |
 
 **Response (200):**
+
 ```json
 {
-  "applications": [ /* ApplicationRecord[] */ ],
+  "applications": [
+    /* ApplicationRecord[] */
+  ],
   "total": 57,
   "page": 1,
   "totalPages": 3
@@ -980,6 +984,7 @@ The `applications` table stores the **user-edited** version (what was actually s
 ### 6.4 `PATCH /applications/:id/status`
 
 **Request:**
+
 ```json
 {
   "status": "interview"
@@ -987,6 +992,7 @@ The `applications` table stores the **user-edited** version (what was actually s
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": 1,
@@ -1000,6 +1006,7 @@ The `applications` table stores the **user-edited** version (what was actually s
 Re-generates `resume_index.json` tags by passing each resume through DeepSeek once. No request body.
 
 **Response (200):**
+
 ```json
 {
   "message": "Resume index refreshed for 3 resumes",
@@ -1037,6 +1044,7 @@ data/
 ### 7.2 Profile Merge Strategy
 
 `default.json` holds shared facts:
+
 ```json
 {
   "workAuthorization": "US Citizen",
@@ -1049,6 +1057,7 @@ data/
 ```
 
 `profiles/backend.json` overrides specific fields:
+
 ```json
 {
   "yearsPythonExperience": "7 years",
@@ -1073,6 +1082,7 @@ data/
 ### 7.4 Auto-Generated Tags
 
 The `POST /resumes/refresh-index` endpoint:
+
 1. Reads all `.md` files from `data/resumes/`
 2. For each resume, calls DeepSeek with a lightweight prompt: "Extract 8–12 keyword tags from this resume. Return as a JSON array."
 3. Writes the aggregated result to `resume_index.json`
@@ -1098,10 +1108,12 @@ src/prompts/templates/
 ```
 
 Example `screening.v1.md`:
+
 ```markdown
 ## System
 
 You are an expert job application assistant. You have access to:
+
 - A job description
 - The candidate's resume
 - The candidate's profile (preferences, work authorization, salary expectations)
@@ -1109,35 +1121,41 @@ You are an expert job application assistant. You have access to:
 You are answering screening questions for a job application.
 
 ## Rules
+
 1. Return ONLY valid JSON matching the exact schema below. No markdown fences, no extra text.
 2. NEVER invent facts not present in the resume or profile. If you don't know, set confidence to 0.0 and add the question to `missingInformation`.
 3. Keep answers professional, specific to the job description, and concise (1-3 sentences unless the question demands more).
 4. Flag any question that asks for information not in the provided context — do NOT fabricate.
 
 ## Schema
+
 {
-  "screeningAnswers": [
-    {
-      "questionId": "hash of question",
-      "question": "the original question text",
-      "answer": "your generated answer or empty string if unknown",
-      "confidence": 0.0-1.0
-    }
-  ],
-  "missingInformation": ["list of questions you couldn't answer"],
-  "overallConfidence": 0.0-1.0
+"screeningAnswers": [
+{
+"questionId": "hash of question",
+"question": "the original question text",
+"answer": "your generated answer or empty string if unknown",
+"confidence": 0.0-1.0
+}
+],
+"missingInformation": ["list of questions you couldn't answer"],
+"overallConfidence": 0.0-1.0
 }
 
 ## Job Description
+
 {{jobDescription}}
 
 ## Resume
+
 {{resumeContent}}
 
 ## Profile
+
 {{profileContent}}
 
 ## Screening Questions
+
 {{screeningQuestionsJson}}
 ```
 
@@ -1157,6 +1175,7 @@ evals/
 ```
 
 **Eval script (`run-eval.ts`):**
+
 1. Loads all fixtures from `evals/fixtures/`
 2. Runs the current prompt version against each fixture
 3. Saves output as `fixture-name.output.{promptVersion}.json`
@@ -1201,19 +1220,19 @@ User navigates to job page
 
 ### 9.2 Error States
 
-| Scenario | Detection | UI Response | Recovery |
-|----------|-----------|-------------|----------|
-| Unsupported site | Adapter registry finds no match | Gray extension icon, "Site not supported" tooltip | None — manual copy-paste |
-| Scrape failure (DOM changed) | Adapter throws | "Could not read job posting. The site may have changed." | Retry button; if persistent, file adapter bug |
-| Backend unreachable | fetch() fails (ECONNREFUSED) | "Backend not running. Start with: docker compose up" | Retry after user starts backend |
-| Backend returns 409 (duplicate URL) | HTTP 409 | "You've already processed this job. View existing draft?" | Show existing draft or regenerate |
-| DeepSeek timeout (30s) | Axios timeout | "DeepSeek is taking too long." | Retry button with countdown |
-| DeepSeek rate limited (429) | HTTP 429 | "Rate limited. Please wait 60 seconds." | Auto-retry after Retry-After header |
-| Invalid JSON from DeepSeek (after retry) | class-validator validation fails on ApplicationDraftDto | "The AI returned an invalid response." Show raw response + validation errors | Manual edit raw response, or regenerate |
-| DeepSeek auth failure (401) | HTTP 401 | "Invalid API key. Check your .env file." | User must fix DEEPSEEK_API_KEY |
-| Form field not found during fill | Selector returns null | Field flagged in UI with ⚠ icon | User fills manually |
-| Answer exceeds field maxLength | Generated answer > FormField.maxLength | Truncated with "…" in field, flagged in UI | User edits manually |
-| User wants to undo fill | Manual trigger | "Revert to original" button shown after fill | Restores snapshot |
+| Scenario                                 | Detection                                               | UI Response                                                                  | Recovery                                      |
+| ---------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------- |
+| Unsupported site                         | Adapter registry finds no match                         | Gray extension icon, "Site not supported" tooltip                            | None — manual copy-paste                      |
+| Scrape failure (DOM changed)             | Adapter throws                                          | "Could not read job posting. The site may have changed."                     | Retry button; if persistent, file adapter bug |
+| Backend unreachable                      | fetch() fails (ECONNREFUSED)                            | "Backend not running. Start with: docker compose up"                         | Retry after user starts backend               |
+| Backend returns 409 (duplicate URL)      | HTTP 409                                                | "You've already processed this job. View existing draft?"                    | Show existing draft or regenerate             |
+| DeepSeek timeout (30s)                   | Axios timeout                                           | "DeepSeek is taking too long."                                               | Retry button with countdown                   |
+| DeepSeek rate limited (429)              | HTTP 429                                                | "Rate limited. Please wait 60 seconds."                                      | Auto-retry after Retry-After header           |
+| Invalid JSON from DeepSeek (after retry) | class-validator validation fails on ApplicationDraftDto | "The AI returned an invalid response." Show raw response + validation errors | Manual edit raw response, or regenerate       |
+| DeepSeek auth failure (401)              | HTTP 401                                                | "Invalid API key. Check your .env file."                                     | User must fix LLM_API_KEY                     |
+| Form field not found during fill         | Selector returns null                                   | Field flagged in UI with ⚠ icon                                              | User fills manually                           |
+| Answer exceeds field maxLength           | Generated answer > FormField.maxLength                  | Truncated with "…" in field, flagged in UI                                   | User edits manually                           |
+| User wants to undo fill                  | Manual trigger                                          | "Revert to original" button shown after fill                                 | Restores snapshot                             |
 
 ### 9.3 Deduplication Check
 
@@ -1228,6 +1247,7 @@ LIMIT 1;
 ```
 
 If a record exists, return 409 with the existing application data. The Review UI offers two options:
+
 - "View existing draft" — loads the saved draft into the Review UI
 - "Regenerate" — creates a fresh generation (still saves as a new record; old record is preserved)
 
@@ -1242,9 +1262,9 @@ A server-side filter runs on all text before it reaches DeepSeek:
 ```typescript
 // src/validation/pii-filter.service.ts
 const PII_PATTERNS: Array<{ name: string; regex: RegExp; replacement: string }> = [
-  { name: "SSN (US)", regex: /\b\d{3}-\d{2}-\d{4}\b/g, replacement: "[REDACTED-SSN]" },
-  { name: "Credit Card", regex: /\b(?:\d[ -]*?){13,16}\b/g, replacement: "[REDACTED-CC]" },
-  { name: "EIN", regex: /\b\d{2}-\d{7}\b/g, replacement: "[REDACTED-EIN]" },
+  { name: 'SSN (US)', regex: /\b\d{3}-\d{2}-\d{4}\b/g, replacement: '[REDACTED-SSN]' },
+  { name: 'Credit Card', regex: /\b(?:\d[ -]*?){13,16}\b/g, replacement: '[REDACTED-CC]' },
+  { name: 'EIN', regex: /\b\d{2}-\d{7}\b/g, replacement: '[REDACTED-EIN]' },
 ];
 
 @Injectable()
@@ -1274,7 +1294,7 @@ If warnings are generated, they are logged server-side and the `ApplicationDraft
 
 ### 10.3 Extension Security
 
-- `DEEPSEEK_API_KEY` is NEVER bundled with the extension or sent to the browser
+- `LLM_API_KEY` is NEVER bundled with the extension or sent to the browser
 - The extension communicates only with `http://localhost:3000` and `https://api.deepseek.com` (the latter indirectly via the backend)
 - Content Security Policy in `manifest.json` restricts extension connections
 - Adapter scrapers are scoped to job description DOM containers, never `document.body`
@@ -1283,7 +1303,7 @@ If warnings are generated, they are logged server-side and the `ApplicationDraft
 
 ```
 .env (gitignored, at repo root)
-├── DEEPSEEK_API_KEY=sk-...
+├── LLM_API_KEY=sk-...
 ├── DB_PASSWORD=jobhunter        # local dev only
 └── DB_USER=jobhunter
 ```
@@ -1297,7 +1317,7 @@ The `.env` file is loaded by Docker Compose into the NestJS container. Never com
 ### 11.1 `docker-compose.yml`
 
 ```yaml
-version: "3.9"
+version: '3.9'
 
 services:
   backend:
@@ -1305,7 +1325,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "127.0.0.1:3000:3000"       # localhost only
+      - '127.0.0.1:3000:3000' # localhost only
     environment:
       - NODE_ENV=development
       - DB_HOST=postgres
@@ -1314,11 +1334,11 @@ services:
       - DB_PASSWORD=jobhunter
       - DB_NAME=jobhunter
     env_file:
-      - .env                         # DEEPSEEK_API_KEY loaded here
+      - .env # LLM_API_KEY loaded here
     volumes:
-      - ./backend/src:/app/src       # Hot reload in dev
-      - ./data:/app/data             # Resumes, profiles, resume_index.json
-      - ./prompts:/app/prompts       # Prompt templates
+      - ./backend/src:/app/src # Hot reload in dev
+      - ./data:/app/data # Resumes, profiles, resume_index.json
+      - ./prompts:/app/prompts # Prompt templates
     depends_on:
       postgres:
         condition: service_healthy
@@ -1331,11 +1351,11 @@ services:
       - POSTGRES_PASSWORD=jobhunter
       - POSTGRES_DB=jobhunter
     ports:
-      - "127.0.0.1:5432:5432"
+      - '127.0.0.1:5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U jobhunter"]
+      test: ['CMD-SHELL', 'pg_isready -U jobhunter']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -1373,7 +1393,7 @@ git clone <repo-url>
 cd job-hunter-agent
 
 # Create .env with your API key
-echo "DEEPSEEK_API_KEY=sk-your-key-here" > .env
+echo "LLM_API_KEY=sk-your-key-here" > .env
 
 # Start everything
 docker compose up -d
@@ -1499,14 +1519,15 @@ Using **pnpm workspaces**:
 ```yaml
 # pnpm-workspace.yaml (root)
 packages:
-  - "backend"
-  - "extension"
-  - "shared"
+  - 'backend'
+  - 'extension'
+  - 'shared'
 ```
 
 `shared` is a local package consumed by both `backend` and `extension` for type definitions.
 
 Root `package.json` scripts:
+
 ```json
 {
   "scripts": {
@@ -1528,6 +1549,7 @@ Root `package.json` scripts:
 ## 13. Implementation Roadmap
 
 ### Phase 1: Foundation (Week 1–2)
+
 - [ ] Initialize monorepo with pnpm workspaces (`backend`, `extension`, `shared`)
 - [ ] Set up NestJS backend with basic module structure
 - [ ] Set up Docker Compose (NestJS + PostgreSQL)
@@ -1538,6 +1560,7 @@ Root `package.json` scripts:
 - [ ] GitHub Actions CI: lint, typecheck, test on PR
 
 ### Phase 2: DeepSeek Integration (Week 2–3)
+
 - [ ] DeepSeekService with retry logic, timeout, error classification
 - [ ] PromptBuilderService: load templates, fill placeholders
 - [ ] ResponseValidator: class-validator validation of JSON, retry on malformed JSON
@@ -1548,6 +1571,7 @@ Root `package.json` scripts:
 - [ ] E2E test: real DeepSeek call against a saved fixture, validate output
 
 ### Phase 3: Resume Management (Week 3–4)
+
 - [ ] ResumeLoaderService: read from `data/resumes/`
 - [ ] ProfileMergeService: shallow merge with variant override
 - [ ] ResumeIndexService: keyword-overlap matching
@@ -1556,6 +1580,7 @@ Root `package.json` scripts:
 - [ ] `resume_index.json` read/write
 
 ### Phase 4: Application Store (Week 4–5)
+
 - [ ] ApplicationRepository: Drizzle queries for CRUD
 - [ ] `POST /applications/:id/save` — persist edited draft
 - [ ] `GET /applications` — list with filters, pagination
@@ -1564,6 +1589,7 @@ Root `package.json` scripts:
 - [ ] Database indexes for common queries
 
 ### Phase 5: Browser Extension — Greenhouse Adapter (Week 5–6)
+
 - [ ] Extension scaffold: Manifest V3, Vite build
 - [ ] Adapter registry + types
 - [ ] Greenhouse adapter: scrape, normalize, form fields
@@ -1573,6 +1599,7 @@ Root `package.json` scripts:
 - [ ] End-to-end: scrape Greenhouse job → generate → display in popup
 
 ### Phase 6: Form Filling (Week 6–7)
+
 - [ ] `scrapeFormFields()` for Greenhouse
 - [ ] `fillField()` with input event dispatch
 - [ ] Form snapshot before fill → "Revert to original" button
@@ -1582,6 +1609,7 @@ Root `package.json` scripts:
 - [ ] Confirmation dialog before fill: "This will fill fields but NOT submit"
 
 ### Phase 7: More Adapters (Week 7–9)
+
 - [ ] Lever adapter
 - [ ] Ashby adapter
 - [ ] Indeed adapter
@@ -1590,6 +1618,7 @@ Root `package.json` scripts:
 - [ ] Adapter health monitoring: smoke test on a schedule (can be manual)
 
 ### Phase 8: Polish & Dashboard (Week 9–10)
+
 - [ ] Confidence tier display in Review UI (colors + icons)
 - [ ] Progressive rendering research (defer to phase if needed)
 - [ ] Dashboard endpoint: interview rate by resume version, response rate by company
@@ -1600,6 +1629,7 @@ Root `package.json` scripts:
 - [ ] GitHub Actions release workflow: build extension zip on tag
 
 ### Deferred (Phase 9+)
+
 - [ ] Natural-language job memory queries (Phase 6b from original)
 - [ ] Multi-step form support (Greenhouse multi-page applications)
 - [ ] Non-English job posting detection and handling
@@ -1609,20 +1639,20 @@ Root `package.json` scripts:
 
 ## 14. Edge Cases
 
-| Scenario | Handling |
-|----------|----------|
-| **Non-English job posting** | Detect language via simple heuristic (common non-English char sets / `lang` attribute). Flag in UI: "This posting may not be in English — review generated content carefully." |
-| **Image-only job posting** | Adapter detects empty/inadequate text content. Shows "No text content found — cannot scrape this posting." |
-| **Job posting removed between scrape and submission** | Form fill may fail on missing fields. User fills manually — no special handling needed. |
-| **Form field `maxlength` shorter than generated answer** | Truncate with "…" and flag field in UI. User must review. |
-| **Multiple form pages (multi-step application)** | Deferred to Phase 9. In v1, user fills subsequent pages manually. |
-| **Form field label changed between scrape and fill** | Fuzzy matching fails → field skipped and flagged in UI. |
-| **User closes extension popup mid-generation** | Backend continues processing. On re-open, popup polls or re-fetches. If completed, loads from in-memory state or re-requests (URL dedup returns 409 with existing draft). |
-| **Docker not running** | Extension shows "Backend not reachable. Start Docker and try again." |
-| **First-time setup (no `profile.json`)** | Backend detects missing config. Returns a `setup_required: true` flag. Review UI shows onboarding: "Set up your profile to get started." |
-| **DeepSeek returns valid JSON but nonsensical content** | No automated detection. Confidence tier catches low confidence. User is expected to review. |
-| **Multiple resumes tie in keyword overlap** | Return both options to the UI, let user pick. |
-| **Very long job description (>50KB)** | Truncated by backend request size limit with 413. Extension should warn on scrape if content exceeds threshold. |
+| Scenario                                                 | Handling                                                                                                                                                                       |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Non-English job posting**                              | Detect language via simple heuristic (common non-English char sets / `lang` attribute). Flag in UI: "This posting may not be in English — review generated content carefully." |
+| **Image-only job posting**                               | Adapter detects empty/inadequate text content. Shows "No text content found — cannot scrape this posting."                                                                     |
+| **Job posting removed between scrape and submission**    | Form fill may fail on missing fields. User fills manually — no special handling needed.                                                                                        |
+| **Form field `maxlength` shorter than generated answer** | Truncate with "…" and flag field in UI. User must review.                                                                                                                      |
+| **Multiple form pages (multi-step application)**         | Deferred to Phase 9. In v1, user fills subsequent pages manually.                                                                                                              |
+| **Form field label changed between scrape and fill**     | Fuzzy matching fails → field skipped and flagged in UI.                                                                                                                        |
+| **User closes extension popup mid-generation**           | Backend continues processing. On re-open, popup polls or re-fetches. If completed, loads from in-memory state or re-requests (URL dedup returns 409 with existing draft).      |
+| **Docker not running**                                   | Extension shows "Backend not reachable. Start Docker and try again."                                                                                                           |
+| **First-time setup (no `profile.json`)**                 | Backend detects missing config. Returns a `setup_required: true` flag. Review UI shows onboarding: "Set up your profile to get started."                                       |
+| **DeepSeek returns valid JSON but nonsensical content**  | No automated detection. Confidence tier catches low confidence. User is expected to review.                                                                                    |
+| **Multiple resumes tie in keyword overlap**              | Return both options to the UI, let user pick.                                                                                                                                  |
+| **Very long job description (>50KB)**                    | Truncated by backend request size limit with 413. Extension should warn on scrape if content exceeds threshold.                                                                |
 
 ---
 
@@ -1650,7 +1680,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "pnpm"
+          cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run typecheck
       - run: pnpm run lint
@@ -1670,7 +1700,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "pnpm"
+          cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
       - name: Verify extension dist
@@ -1685,7 +1715,7 @@ name: Release Extension
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
 
 jobs:
   release:
@@ -1698,7 +1728,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "pnpm"
+          cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
       - name: Package extension
@@ -1737,7 +1767,7 @@ pnpm install
 
 # Copy and fill environment
 cp .env.example .env
-# Edit .env: add DEEPSEEK_API_KEY=sk-...
+# Edit .env: add LLM_API_KEY=sk-...
 
 # Start backend + database
 docker compose up -d
@@ -1760,3 +1790,4 @@ pnpm run test
 # Run lint + typecheck
 pnpm run lint
 pnpm run typecheck
+```

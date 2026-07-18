@@ -1,4 +1,5 @@
 # System Architecture Specification
+
 ## Local-First Multi-Platform AI Job Copilot (DeepSeek API Edition)
 
 **Version:** 1.0
@@ -79,6 +80,7 @@ Design principle: **the LLM never touches the DOM, and the DOM-scraping code nev
 ### 3.1 Browser Extension
 
 Responsibilities:
+
 - Detect supported job site via URL/DOM matching
 - Scrape raw fields (title, company, location, description, form field labels)
 - Normalize into `JobPosting` schema (see 4.1)
@@ -91,11 +93,17 @@ Adapter pattern (self-registering, so new sites don't require touching core logi
 
 ```js
 registerAdapter({
-  id: "linkedin",
-  matches: (url) => url.includes("linkedin.com/jobs"),
-  scrapeJobPosting: () => { /* returns raw fields */ },
-  scrapeFormFields: () => { /* returns list of {label, type, selector} */ },
-  fillField: (selector, value) => { /* sets value, dispatches input event */ }
+  id: 'linkedin',
+  matches: (url) => url.includes('linkedin.com/jobs'),
+  scrapeJobPosting: () => {
+    /* returns raw fields */
+  },
+  scrapeFormFields: () => {
+    /* returns list of {label, type, selector} */
+  },
+  fillField: (selector, value) => {
+    /* sets value, dispatches input event */
+  },
 });
 ```
 
@@ -104,6 +112,7 @@ Adapters to build first: LinkedIn, Indeed, Greenhouse, Lever, Ashby (in that ord
 ### 3.2 Local Backend (FastAPI)
 
 Responsibilities:
+
 - Receive scraped `JobPosting` from the extension
 - Load resume content
 - Build the prompt
@@ -114,13 +123,13 @@ Responsibilities:
 
 Endpoints:
 
-| Method | Path | Purpose |
-|---|---|---|
-| POST | `/jobs/normalize` | Accepts raw scrape, returns cleaned `JobPosting` |
-| POST | `/applications/generate` | Accepts `JobPosting`, returns `ApplicationDraft` |
-| POST | `/applications/{id}/save` | Persists user-edited draft + status |
-| GET | `/applications` | Lists past applications (for the Job Memory queries) |
-| POST | `/applications/{id}/status` | Updates status (interview, offer, rejected, etc.) |
+| Method | Path                        | Purpose                                              |
+| ------ | --------------------------- | ---------------------------------------------------- |
+| POST   | `/jobs/normalize`           | Accepts raw scrape, returns cleaned `JobPosting`     |
+| POST   | `/applications/generate`    | Accepts `JobPosting`, returns `ApplicationDraft`     |
+| POST   | `/applications/{id}/save`   | Persists user-edited draft + status                  |
+| GET    | `/applications`             | Lists past applications (for the Job Memory queries) |
+| POST   | `/applications/{id}/status` | Updates status (interview, offer, rejected, etc.)    |
 
 Runs on `localhost` only, no external exposure needed. The DeepSeek API key lives in a local `.env` file, never sent to the browser.
 
@@ -129,7 +138,7 @@ Runs on `localhost` only, no external exposure needed. The DeepSeek API key live
 - Base URL: `https://api.deepseek.com/v1/chat/completions` (OpenAI-compatible schema)
 - Recommended model: `deepseek-chat` for tailoring/cover letters (fast, cheap); consider `deepseek-reasoner` only if you want it to reason through ambiguous screening questions — it costs more and is usually unnecessary for this task
 - Use **JSON mode / structured output** by instructing the system prompt to return only valid JSON matching a fixed schema, and validate with Pydantic on receipt
-- API key stored in environment variable `DEEPSEEK_API_KEY`, loaded server-side only
+- API key stored in environment variable `LLM_API_KEY`, loaded server-side only
 - Set a hard `max_tokens` ceiling and a request timeout (e.g., 30s) with a retry-once-then-fail policy
 - Log token usage per request to a local file so you can track actual cost over time
 
@@ -142,7 +151,7 @@ async def call_deepseek(messages: list[dict]) -> str:
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(
             "https://api.deepseek.com/v1/chat/completions",
-            headers={"Authorization": f"Bearer {os.environ['DEEPSEEK_API_KEY']}"},
+            headers={"Authorization": f"Bearer {os.environ['LLM_API_KEY']}"},
             json={
                 "model": "deepseek-chat",
                 "messages": messages,
@@ -179,6 +188,7 @@ Resume: [ backend.md ▾ ]  (auto-matched, 82% keyword overlap)
 ```
 
 Rules:
+
 - Nothing is written to the page DOM until the user clicks "Fill Form"
 - "Fill Form" only fills fields — it never submits
 - Every field the model was unsure about should be flagged (see `confidence` / `missing_information` in the schema) so the user's eye is drawn there first
@@ -231,9 +241,7 @@ This is what lets you later ask the local LLM things like "which companies respo
 {
   "resume_summary": "string",
   "cover_letter": "string",
-  "screening_answers": [
-    { "question": "string", "answer": "string", "confidence": 0.0 }
-  ],
+  "screening_answers": [{ "question": "string", "answer": "string", "confidence": 0.0 }],
   "missing_information": ["string"],
   "overall_confidence": 0.0
 }
@@ -323,6 +331,7 @@ prompts/
 ```
 
 System prompt should explicitly instruct:
+
 1. Output valid JSON only, matching the given schema, no markdown fences
 2. Never invent facts not present in the resume or `profile.json` — if unsure, add the field to `missing_information` instead of guessing
 3. Keep tone professional and specific to the job description, not generic
@@ -345,7 +354,7 @@ Each stage should be independently testable — e.g., you can unit test the norm
 ## 8. Security & Privacy Notes
 
 - **Data leaves the machine now.** Unlike the local-Ollama version, resume content and job descriptions are sent to DeepSeek's servers on every generation call. Review DeepSeek's API data-retention terms if this matters to you, and avoid putting highly sensitive personal data (SSN, government ID numbers) into `profile.json` or the resume text sent to the API.
-- Store `DEEPSEEK_API_KEY` in a `.env` file excluded from version control, never in the extension's client-side code.
+- Store `LLM_API_KEY` in a `.env` file excluded from version control, never in the extension's client-side code.
 - The local backend should only bind to `localhost` — no need to expose it on the network.
 - Consider a per-request cost/token log so a runaway loop (e.g., accidental retry storm) doesn't produce a surprise bill.
 

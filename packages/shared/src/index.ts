@@ -19,10 +19,10 @@ export {
   REQUEST_SIZE_LIMIT_BYTES,
   MAX_JOB_DESCRIPTION_LENGTH,
   MAX_RETRIES,
-  DEEPSEEK_TIMEOUT_MS,
-  DEEPSEEK_DEFAULT_TEMPERATURE,
-  DEEPSEEK_DEFAULT_MAX_TOKENS,
-  DEEPSEEK_COST_PER_1K,
+  LLM_TIMEOUT_MS,
+  LLM_DEFAULT_TEMPERATURE,
+  LLM_DEFAULT_MAX_TOKENS,
+  LLM_COST_PER_1K,
   KEYWORD_MATCH_THRESHOLD,
   FUZZY_MATCH_THRESHOLD,
   DB_POOL_DEFAULT_PORT,
@@ -31,9 +31,4 @@ export {
   HTTP_STATUS,
 } from './constants';
 
-export type {
-  ApplicationStatus,
-  ConfidenceTier,
-  ResumeSelectionReason,
-  AdapterId,
-} from './constants';
+export type { ApplicationStatus, ConfidenceTier, ResumeSelectionReason, AdapterId } from './constants';

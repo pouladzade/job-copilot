@@ -111,7 +111,7 @@
 - [x] Implement `DeepSeekService.generateJson()` — OpenAI SDK, deepseek-chat, JSON mode
 - [x] Implement `DeepSeekService.generateWithRetry()` — retry once, linear backoff, no retry on 4xx
 - [x] Implement `isRateLimitOrAuthError()` helper — classify 401/429/insufficient_quota
-- [x] Implement `estimateCost()` — token-based cost calculation from `DEEPSEEK_COST_PER_1K`
+- [x] Implement `estimateCost()` — token-based cost calculation from `LLM_COST_PER_1K`
 - [x] Create `DeepSeekError` class with code + statusCode
 
 ### 2.2 Prompt Builder ✅
@@ -550,16 +550,16 @@ Items that are valuable but not blocking the initial working tool.
 
 ## Timeline Summary
 
-| Phase | Duration | Status | Key Milestone |
-|-------|----------|--------|---------------|
-| 0 | — | ✅ Done | Planning complete |
-| 1 | 2 weeks | ✅ Done | Monorepo + Docker + CI + 3 packages building |
-| 2 | 1 week | ✅ Done | `POST /applications/generate` with DeepSeek |
-| 3 | 1 week | ✅ Done | Resume auto-matching + profile merging |
-| 4 | 1 week | ⬜ Not started | Full CRUD + URL dedup |
-| 5 | 1 week | ⬜ Not started | End-to-end: Greenhouse job → popup |
-| 6 | 1 week | ⬜ Not started | Form fill with undo |
-| 7 | 2 weeks | ⬜ Not started | 5 job boards supported |
-| 8 | 1 week | ⬜ Not started | Dashboard + polish + release |
+| Phase | Duration | Status         | Key Milestone                                |
+| ----- | -------- | -------------- | -------------------------------------------- |
+| 0     | —        | ✅ Done        | Planning complete                            |
+| 1     | 2 weeks  | ✅ Done        | Monorepo + Docker + CI + 3 packages building |
+| 2     | 1 week   | ✅ Done        | `POST /applications/generate` with DeepSeek  |
+| 3     | 1 week   | ✅ Done        | Resume auto-matching + profile merging       |
+| 4     | 1 week   | ⬜ Not started | Full CRUD + URL dedup                        |
+| 5     | 1 week   | ⬜ Not started | End-to-end: Greenhouse job → popup           |
+| 6     | 1 week   | ⬜ Not started | Form fill with undo                          |
+| 7     | 2 weeks  | ⬜ Not started | 5 job boards supported                       |
+| 8     | 1 week   | ⬜ Not started | Dashboard + polish + release                 |
 
 **Completed: Phases 0–3. Remaining: Phases 4–8 (est. ~6 weeks).**
