@@ -5,7 +5,7 @@ A personal, local-first tool that helps you go from "found a job listing" to "su
 ## Overview
 
 1. **Scrape** job postings from supported sites via a browser extension
-2. **Tailor** applications using the DeepSeek API — generates professional summaries, cover letters, and screening-question answers
+2. **Tailor** applications using an OpenAI-compatible API — generates professional summaries, cover letters, and screening-question answers
 3. **Review** everything in a UI with confidence indicators and inline editing
 4. **Fill** web form fields only after explicit user approval
 5. **Persist** every application to a local PostgreSQL database for search and analysis
@@ -51,7 +51,7 @@ A personal, local-first tool that helps you go from "found a job listing" to "su
 | Backend | NestJS (TypeScript), TypeORM |
 | Database | PostgreSQL 16 |
 | Extension | TypeScript, Preact, Vite (Manifest V3) |
-| AI | DeepSeek API (via OpenAI SDK) |
+| AI | OpenAI-compatible API (via OpenAI SDK) |
 | Validation | class-validator, class-transformer |
 | Package manager | pnpm (workspaces) |
 | Containerization | Docker Compose |
@@ -61,7 +61,7 @@ A personal, local-first tool that helps you go from "found a job listing" to "su
 - **Node.js** ≥ 22
 - **pnpm** ≥ 9
 - **Docker** and **Docker Compose** (for PostgreSQL)
-- A **DeepSeek API key** (get one at [platform.deepseek.com](https://platform.deepseek.com))
+- An **API key** for an OpenAI-compatible provider (e.g., [DeepSeek](https://platform.deepseek.com), [OpenAI](https://platform.openai.com))
 
 ## Quick Start
 
@@ -79,7 +79,7 @@ pnpm install
 cp .env.example .env
 ```
 
-Edit `.env` and add your DeepSeek API key:
+Edit `.env` and add your API key:
 
 ```
 DEEPSEEK_API_KEY=sk-your-key-here
@@ -202,8 +202,8 @@ pnpm build
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DEEPSEEK_API_KEY` | — | DeepSeek API key (required) |
-| `DEEPSEEK_MODEL` | `deepseek-chat` | Model to use for generation |
+| `DEEPSEEK_API_KEY` | — | API key for OpenAI-compatible provider (required) |
+| `DEEPSEEK_MODEL` | `deepseek-chat` | Model name to use for generation |
 | `DB_HOST` | `localhost` | PostgreSQL host |
 | `DB_PORT` | `5433` | PostgreSQL port |
 | `DB_USER` | `jobhunter` | Database user |
@@ -217,8 +217,8 @@ pnpm build
 - **Human-in-the-loop (HITL):** No auto-submit, ever. The user always clicks the final Submit button.
 - **LLM never touches the DOM:** Scraping and LLM code are completely separated by `JobPosting` and `ApplicationDraft` schemas.
 - **Extension owns normalization:** Adapters scrape and normalize; the backend validates but never re-normalizes.
-- **Local-first:** All data stays on your machine. Only job descriptions and resume content go to DeepSeek's API.
-- **PII protection:** Server-side PII filter runs before any data reaches DeepSeek.
+- **Local-first:** All data stays on your machine. Only job descriptions and resume content go to the LLM API.
+- **PII protection:** Server-side PII filter runs before any data reaches the LLM API.
 
 ## License
 
