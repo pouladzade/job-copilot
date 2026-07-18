@@ -1,0 +1,47 @@
+version: '3.9'
+
+services:
+  backend:
+    build:
+      context: ./packages/backend
+      dockerfile: Dockerfile
+    ports:
+      - '127.0.0.1:4001:4000'
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=jobhunter
+      - DB_PASSWORD=jobhunter
+      - DB_NAME=jobhunter
+    env_file:
+      - .env
+    volumes:
+      - ./packages/backend/src:/app/src
+      - ./data:/app/data
+      - ./prompts:/app/prompts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: pnpm run start:dev
+
+  postgres:
+    image: postgres:16-alpine
+    command: -p 5433
+    environment:
+      - POSTGRES_USER=jobhunter
+      - POSTGRES_PASSWORD=jobhunter
+      - POSTGRES_DB=jobhunter
+      - PGPORT=5433
+    ports:
+      - '127.0.0.1:5433:5433'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U jobhunter -p 5433']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

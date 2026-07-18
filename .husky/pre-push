@@ -1,0 +1,6 @@
+#!/bin/sh
+echo "⏳ Type check..."
+pnpm typecheck || { echo "❌ Type check failed"; exit 1; }
+echo "⏳ Backend unit tests..."
+pnpm --filter=backend test -- --forceExit || { echo "❌ Unit tests failed"; exit 1; }
+echo "✅ Push allowed"

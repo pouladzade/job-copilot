@@ -1,0 +1,18 @@
+{
+  "general.md": {
+    "tags": [
+      "TypeScript",
+      "Node.js",
+      "Python",
+      "AWS",
+      "Docker",
+      "React",
+      "PostgreSQL",
+      "CI/CD",
+      "Microservices",
+      "GraphQL",
+      "Kubernetes",
+      "Terraform"
+    ]
+  }
+}

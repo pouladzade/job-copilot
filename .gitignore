@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+.next/
+out/
+*.tsbuildinfo
+
+# Environment files (contains secrets)
+.env
+.env.local
+.env.production
+
+# Secrets
+secrets/
+*.pem
+*.key
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+
+# Turbo
+.turbo/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Seed credentials (contains plaintext passwords)
+packages/database/prisma/seed-credentials.txt
+
+# Docker
+docker/postgres_data/
+
+# Prisma migrations (generated, but tracked — keep)
+# Don't ignore migrations/
+.claude/
+
+.agents/
+

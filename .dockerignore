@@ -1,0 +1,68 @@
+# =============================================================================
+# Job Hunter Agent — Docker Ignore
+# =============================================================================
+# Excludes build artifacts, dependencies, and VCS from Docker build context.
+# =============================================================================
+
+# Dependencies (installed fresh in Docker)
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+
+# Testing
+coverage/
+.nyc_output/
+
+# Git
+.git/
+.gitmodules
+.gitattributes
+
+# IDE & OS
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment (secrets should be injected, not baked)
+.env
+.env.*
+!.env.example
+
+# Docker (don't copy docker compose into images)
+docker/
+
+# Docs (not needed at runtime)
+docs/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Misc
+.husky/
+.github/
+.editorconfig
+.prettierrc
+.prettierignore
+.commitlintrc.cjs
+.lintstagedrc.cjs
+.eslintrc.cjs
+.clinerules
+
+# Terraform (IaC, not runtime)
+*.tf
+*.tfstate
+terraform/
+
+# Scripts (dev helpers)
+scripts/

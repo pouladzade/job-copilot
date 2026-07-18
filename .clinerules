@@ -1,0 +1,238 @@
+# Job Hunter Agent — Agent Rules (Cline)
+
+# These rules are automatically injected into every conversation context.
+
+# You MUST follow them. No exceptions without explicit user approval.
+
+## Architecture
+
+- Monorepo: pnpm workspaces (no Turborepo needed for this scale)
+- Backend: NestJS (TypeScript) — packages/backend
+- Browser Extension: TypeScript + Manifest V3 + Preact — packages/extension
+- Shared: packages/shared (DTOs, types, constants, API contracts)
+- Database: TypeORM + PostgreSQL 16 — packages/backend/src/database
+- Docker Compose for local dev (NestJS + PostgreSQL)
+- No external exposure — localhost only
+
+## Memory Bank (NON-NEGOTIABLE)
+
+- Read ALL files in `memory-bank/` before executing ANY code changes
+- Update `memory-bank/activeContext.md` after every major task completion
+- Update `memory-bank/progress.md` after completing a phase or milestone
+- If `memory-bank/` files are empty, populate them FIRST based on docs/specs/implementation-spec.md
+- Memory bank structure:
+  - `projectBrief.md` — high-level project overview and goals
+  - `productContext.md` — why this exists, user problems solved
+  - `systemPatterns.md` — architecture patterns, technical decisions, conventions
+  - `techContext.md` — technologies, versions, constraints, setup
+  - `activeContext.md` — current focus, recent changes, next steps
+  - `progress.md` — what's completed, what's in progress, what's remaining
+
+## TypeScript Rules (NON-NEGOTIABLE)
+
+- strict: true, noUncheckedIndexedAccess: true, noImplicitReturns: true
+- All interface properties must be readonly
+- NEVER use 'any' — use 'unknown' and narrow with type guards
+- Explicit return types on all exported functions
+- const over let, NEVER var
+- No non-null assertions (!) — use proper type guards
+
+## Code Quality
+
+- Max function: 50 lines (utils), 30 lines (services/controllers)
+- Max cyclomatic complexity: 10
+- Max function parameters: 4
+- No magic numbers — extract to named constants
+- Prefer early returns over deep nesting
+
+## ESLint-Enforced Patterns (NON-NEGOTIABLE — will fail lint if violated)
+
+These are the specific ESLint rules that will BLOCK your code. You MUST follow them:
+
+### TypeScript Strictness
+
+- NEVER use `any` — use `unknown` and narrow with type guards (`@typescript-eslint/no-explicit-any: error`)
+- ALWAYS add explicit return types on exported functions (`@typescript-eslint/explicit-function-return-type: error`)
+- NEVER use non-null assertion (`!`) — use proper type guards or optional chaining (`@typescript-eslint/no-non-null-assertion: error`)
+- NEVER use `==` — always `===` and `!==` (`eqeqeq: error, null: never`)
+- NEVER assign the `any` type unsafely — no `no-unsafe-assignment`, `no-unsafe-member-access`, `no-unsafe-call`, `no-unsafe-return`, `no-unsafe-argument` (all errors)
+- NEVER use a nullable value in a conditional without explicit null check. ALWAYS write `if (x !== null && x !== undefined)` or `if (x != null)` — do NOT write `if (x)` for nullable types (`@typescript-eslint/strict-boolean-expressions: error`)
+- NEVER write an `async` function without at least one `await` expression inside it (`require-await: error`)
+- NEVER leave unused variables — prefix with `_` if intentionally unused (`@typescript-eslint/no-unused-vars: error`)
+- ALWAYS use `const` over `let`, NEVER `var` (`prefer-const: error`, `no-var: error`)
+
+### Boolean & Null Handling
+
+- NEVER coerce objects/strings/numbers to booleans. Use explicit checks: `arr.length > 0` not `if (arr)`, `str !== ''` not `if (str)` (`strict-boolean-expressions: error`)
+- ALWAYS use optional chaining (`?.`) instead of nested `&&` checks (`prefer-optional-chain: error`)
+- ALWAYS use nullish coalescing (`??`) instead of `||` for defaults (`prefer-nullish-coalescing: error`)
+- NEVER write unnecessary conditionals — if a value is always truthy/falsy, don't check it (`no-unnecessary-condition: error`)
+- ALWAYS exhaustively check all switch cases (`switch-exhaustiveness-check: error`)
+
+### Function & Code Structure
+
+- Max function body: 30 lines for services/controllers, 50 lines for utils (blank lines & comments don't count)
+- Max cyclomatic complexity: 10
+- Max nesting depth: 3
+- Max parameters: 4
+- NEVER use magic numbers (except: 0, 1, -1, 2, and HTTP status codes 200, 201, 400, 401, 403, 404, 429, 500) — extract to named constants
+- NEVER use `else` after `return` (`no-else-return: error`)
+- NEVER use `return await` — just `return` (`no-return-await: error`)
+- NEVER reassign function parameters (`no-param-reassign: error, props: true`)
+- ALWAYS add a blank line before `return` statements (`padding-line-between-statements: error`)
+- ALWAYS add a blank line between declarations and block-like statements (if/for/while)
+
+### Console & Debugging
+
+- NEVER use `console.log` — only `console.warn` and `console.error` are allowed (`no-console: error`)
+- NEVER leave `debugger` statements, `alert()`, `eval()`, or `implied eval` in code
+
+### Imports & Formatting
+
+- NEVER use default exports — always named exports (`import/no-default-export: error`)
+- ALWAYS sort imports: builtin → external → internal → parent → sibling → index, alphabetized (`import/order: error`)
+- NEVER create import cycles (`import/no-cycle: error`)
+- NEVER have duplicate imports (`import/no-duplicates: error`)
+- NEVER use useless path segments like `./index` or `../` when not needed (`import/no-useless-path-segments: error`)
+- No trailing spaces, max 1 consecutive blank line, always end files with a newline
+- NEVER start a file with a blank line (`maxBOF: 0`)
+
+## File Structure
+
+- One NestJS module per domain (application, deepseek, resume, prompts, validation)
+- Each module: module.ts → controller.ts → service.ts → dto/*.ts
+- **DTOs live in their module's dto/ folder** — NOT a top-level dto/ directory
+  - Example: `application/dto/generate-request.dto.ts`, `deepseek/dto/token-usage.dto.ts`
+  - Each DTO: class with class-validator decorators + @ApiProperty from @nestjs/swagger
+- Shared DTOs (cross-package) in `packages/shared/src/dto/`
+- Barrel exports (index.ts) in every folder
+- Extension imports shared DTOs via `@job-hunter/shared`
+- No deep cross-package imports — use package barrel exports
+
+## Database (NON-NEGOTIABLE)
+
+- TypeORM is the single source of truth for schema (Entity classes with decorators)
+- PostgreSQL 16 with JSONB for flexible fields (screening_answers)
+- All new configurable data → database table, NEVER a constant file
+- SERIAL primary keys via `@PrimaryGeneratedColumn()` (single-user local tool, no UUID overhead needed)
+- `@nestjs/typeorm` for NestJS-native integration
+- Migrations managed via TypeORM CLI (`pnpm migration:generate` → `pnpm migration:run`)
+- `synchronize: true` in dev only — never in production
+- Migrations reviewed same as code
+
+## API Design
+
+- RESTful: `/applications` — plural nouns, no verbs in URLs
+- class-validator on all request body DTOs (NestJS ValidationPipe auto-applied)
+- Swagger @ApiProperty on all DTO fields — docs at `/api/docs`
+- Error envelope: `{ error: string, message: string }` with appropriate HTTP status
+- CORS: only `chrome-extension://` origins allowed
+- Request size limit: 50KB (express.json)
+
+## Security
+
+- DEEPSEEK_API_KEY in `.env` only — never committed, never sent to browser
+- Backend binds to `127.0.0.1` only — never `0.0.0.0`
+- PII filter runs server-side before any data reaches DeepSeek
+- NEVER log API keys, tokens, or passwords
+- No secrets in code — env vars only
+- Adapter scraping scoped to job description containers, never full page DOM
+
+## Git (NON-NEGOTIABLE)
+
+- NEVER commit directly to main — always feature branch
+- Branch naming: feat/xxx, fix/xxx, chore/xxx, docs/xxx
+- One branch = one feature or fix
+- Conventional commits: feat:, fix:, chore:, docs:, refactor:, test:
+- PR required for all changes — squash merge only
+- Delete branch after merge
+
+## Testing (NON-NEGOTIABLE)
+
+- Unit tests: Jest on all services (files: *.spec.ts)
+- E2E tests: supertest on all endpoints (files: *.e2e-spec.ts)
+- Coverage threshold: 95% (branches, functions, lines, statements — all ≥95%)
+- Tests must pass before any PR can be merged
+- Mock only external APIs — never mock DB or Redis
+- Test DB operations against a real Postgres test container
+- Every new endpoint: at least 1 success + 1 failure E2E test
+
+## Documentation (NON-NEGOTIABLE)
+
+- Plans + Modules docs ARE the source of truth — always update when making decisions
+- If you change architecture/tech stack → update plans/tech-stack.md + plans/architecture.md
+- If you change a module → update modules/0X-*.md
+- If you add/change a DB table → update modules/09-database.md
+- If you add a new package → update modules/README.md dependency graph
+- Before implementing any feature → check plans/ and modules/ for the spec
+- Specs win over intuition — if a plan doc says something, follow it
+
+## Dependencies (NON-NEGOTIABLE)
+
+- Always use latest stable versions — check npm/pnpm registry before adding any package
+- Never pin to old major versions unless there's a documented incompatibility
+- Run `pnpm outdated` periodically to stay current
+- Minimize dependencies — prefer stdlib and NestJS built-ins over third-party libs
+- Audit dependencies weekly: `pnpm audit`
+
+## Tooling (NON-NEGOTIABLE)
+
+- ESLint: zero warnings allowed, `--max-warnings 0` enforced by lint-staged
+- Prettier: run on every file, formatting enforced by pre-commit hook
+- Git hooks: pre-commit, commit-msg, pre-push — NEVER skip with --no-verify
+- Commit messages: conventional commits enforced by commitlint
+- Husky manages all hooks — do not manually modify .git/hooks
+
+## Security Best Practices
+
+- Input validation: class-validator on EVERY request body DTO — no exceptions
+- SQL injection: use TypeORM parameterized queries (QueryBuilder or Repository) — never raw SQL with user input
+- CORS: whitelist `chrome-extension://` origins only — never allow '*'
+- Helmet: add HTTP security headers (XSS, clickjack, MIME-sniff)
+- Never expose stack traces in error responses
+- All data processing is local — no multi-tenancy, no user auth needed
+
+## NestJS Patterns
+
+- No auth guards needed (local-only tool, single user)
+- Middleware: only for cross-cutting concerns (request ID, logging, CORS)
+- Interceptors: response transformation, logging, token usage tracking
+- Pipes: class-validator validation (auto-applied via ValidationPipe in main.ts)
+- Filters: global exception filter → `{ error: string, message: string }` envelope
+- Use forwardRef() for all circular module dependencies
+- @nestjs/config for environment variables
+- @nestjs/swagger for API documentation
+
+## When Generating Code
+
+- Read `memory-bank/` FIRST — update it after any significant change
+- If you make any architectural/design decision → update `docs/specs/implementation-spec.md` immediately
+- Never assume — when in doubt, consult `docs/` docs first
+- All new backend code: module.ts + controller.ts + service.ts + dto/*.ts + spec files
+- All new DB entities: TypeORM entity class + migration
+- Run `pnpm lint` and `pnpm typecheck` after generating code — fix errors before presenting result
+- Use latest stable package versions — check registry when adding dependencies
+- Always include Swagger decorators on controllers and DTOs
+- Always use class-validator decorators on DTO classes
+- All interface properties must be readonly
+- Prefer @nestjs/config for environment variables
+- Adapter code in extension: self-registering pattern, never modify core logic for new sites
+
+## Build Gate (NON-NEGOTIABLE)
+
+- The build script runs `eslint --max-warnings 0` BEFORE `tsc` — no TSC if ESLint fails
+- Before presenting ANY code as complete, you MUST run `pnpm build` and it MUST pass with zero eslint errors/warnings AND zero TypeScript errors
+- If the build fails, fix ALL errors before declaring completion — do not leave them for later
+- NEVER suggest bypassing with `--no-verify` or blanket `eslint-disable` comments
+- NEVER commit code that fails `pnpm build` — use `git commit` without `--no-verify` so lint-staged validates
+- The build script (`package.json#scripts.build`) IS THE SINGLE SOURCE OF TRUTH for code quality gates
+- Run `pnpm build` after every code generation pass — it's the definitive "am I done?" check
+
+## Operating Rules
+
+- ALWAYS read the `memory-bank/` BEFORE executing any code changes
+- If `memory-bank/` files are empty, populate them based on `docs/specs/implementation-spec.md` before anything else
+- Update `memory-bank/activeContext.md` after every major task completion
+- Update `memory-bank/progress.md` after completing a phase or milestone
+- When the user commands "update memory bank", do a full review and update all 6 files
+- The spec at `docs/specs/implementation-spec.md` is the authoritative source for system design
