@@ -1,5 +1,12 @@
 # Job Hunter Agent
 
+[![CI](https://github.com/pouladzade/job-hunter-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/pouladzade/job-hunter-agent/actions/workflows/ci.yml)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22-green)](https://nodejs.org/)
+[![pnpm](https://img.shields.io/badge/pnpm-%3E%3D9-orange)](https://pnpm.io/)
+[![NestJS](https://img.shields.io/badge/NestJS-11-ea2845)](https://nestjs.com/)
+[![License](https://img.shields.io/badge/license-Private-red)](./LICENSE)
+
 A personal, local-first tool that helps you go from "found a job listing" to "submitted a tailored application" faster — with a human always in control of every meaningful action.
 
 ## Overview

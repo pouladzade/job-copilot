@@ -6,7 +6,7 @@
     "build": "tsc",
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
-    "lint": "eslint src/ --max-warnings 0",
+    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src/ --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "test": "jest --forceExit --detectOpenHandles",
     "test:e2e": "jest --config ./test/jest-e2e.json --forceExit --detectOpenHandles",
