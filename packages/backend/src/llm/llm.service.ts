@@ -34,9 +34,9 @@ export class LlmService {
   private readonly model: string;
 
   constructor() {
-    const apiKey = process.env['LLM_API_KEY'] ?? process.env['LLM_API_KEY'];
+    const apiKey = process.env['LLM_API_KEY'] ?? process.env['DEEPSEEK_API_KEY'];
     if (apiKey === undefined || apiKey === '') {
-      this.logger.error('LLM_API_KEY (or LLM_API_KEY) is not set in environment');
+      this.logger.error('LLM_API_KEY (or DEEPSEEK_API_KEY) is not set in environment');
       throw new Error('LLM_API_KEY is required');
     }
 
@@ -50,7 +50,7 @@ export class LlmService {
       fetch: globalThis.fetch,
     });
 
-    this.model = process.env['LLM_MODEL'] ?? process.env['LLM_MODEL'] ?? 'deepseek-chat';
+    this.model = process.env['LLM_MODEL'] ?? process.env['DEEPSEEK_MODEL'] ?? 'deepseek-chat';
   }
 
   async generateJson(
