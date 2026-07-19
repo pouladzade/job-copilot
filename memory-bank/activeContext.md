@@ -1,34 +1,40 @@
 # Active Context — AI Job Copilot
 
-**Last updated:** 2026-07-18
+**Last updated:** 2026-07-19
 
 ## Current Focus
 
-**Phase 3: Resume Management** — complete. Real resume loading + auto-matching replaces Phase 2 hardcoded stubs. Ready for Phase 4 (Application Store).
+**Phase 4: Application Store** — complete. Full CRUD, URL deduplication, and LLM provider refactor.
 
-## Recent Changes (Phase 3)
+## Recent Changes (Phase 4)
 
-1. **ADR recorded** — TypeORM is canonical. Drizzle removed from techContext. Migration workflow: `pnpm migration:generate` → `pnpm migration:run` via TypeORM CLI.
-2. **ResumeLoaderService** — reads `.md` from `data/resumes/`, returns empty list on missing directory
-3. **ProfileMergeService** — shallow merge default.json + variant.json, variant wins, returns `{ setupRequired: true }` if no default.json
-4. **ResumeIndexService** — keyword-overlap scoring with stop-word filtering, `resume_index.json` read/write, threshold: 2 overlapping keywords
-5. **ResumeController** — `POST /resumes/refresh-index` — calls DeepSeek per resume for tag extraction, writes `resume_index.json`, returns tags + token usage
-6. **ResumeModule** — wired with DeepseekModule import, all services exported
-7. **ApplicationService.generate()** — replaced hardcoded resume with real selection: `resumeHint` → auto-match → fallback to first resume. URL dedup deferred to Phase 4 (TODO comment in code).
-8. **Placeholder data** — `data/resumes/general.md` (~800 words placeholder resume) + `data/profiles/default.json`
+1. **Application persistence** — `generate()` now writes to `applications` table + linked `token_usage_log` with `applicationId`
+2. **CRUD methods** — `findById`, `findByUrl`, `update`, `list` (ILIKE + pagination), `updateStatus` in `ApplicationService`
+3. `POST /applications/:id/save` — persist user-edited draft, 404 on missing ID
+4. `GET /applications` — paginated list with company (ILIKE), status, resumeUsed filters
+5. `PATCH /applications/:id/status` — validated status transitions with `UpdateStatusDto`
+6. **URL deduplication** — `findByUrl` check before LLM call, returns 409 with existing data
 
-## Next Steps (Phase 4: Application Store)
+### Infrastructure fixes
 
-1. Implement ApplicationRepository with TypeORM queries (CRUD)
-2. `POST /applications/:id/save` — persist edited draft
-3. `GET /applications` — list with filters + pagination
-4. `PATCH /applications/:id/status` — status transitions
-5. URL deduplication in `generate()` flow (409 check)
-6. E2E tests for all endpoints
+- **LLM provider refactor** — renamed `deepseek/` → `llm/`, configurable `LLM_BASE_URL`/`LLM_API_KEY`/`LLM_MODEL` env vars with backward compat
+- **NestJS CLI** — switched `start:dev` from `tsx` to `nest start --watch`
+- **Path resolution** — centralized `DATA_DIR` and `PROMPTS_DIR` constants
+- **node-fetch@2 fix** — `fetch: globalThis.fetch` on OpenAI client
+- **Validator fix** — moved validation to combined draft instead of per-step
+- **ESLint removed** — deleted across all packages (_eslintrc.cjs, lint scripts, devDeps, CI step, Husky hooks, _clinerules)
 
 ## Active Files
 
-- `packages/backend/src/application/application.service.ts` — orchestrator with real resume selection
-- `packages/backend/src/resume/` — 3 services + controller + DTO
-- `data/resumes/general.md` — placeholder resume (user should replace)
-- `data/profiles/default.json` — shared profile facts
+- `packages/backend/src/application/application.service.ts` — CRUD, URL dedup, generate orchestration
+- `packages/backend/src/application/application.controller.ts` — health + 5 endpoints
+- `packages/backend/src/llm/llm.service.ts` — provider-agnostic OpenAI-compatible client
+- `packages/backend/src/application/dto/update-status.dto.ts`
+
+## Next Steps (Phase 5: Browser Extension)
+
+1. Verify extension build + Chrome loading
+2. Build out background.ts message relay
+3. Greenhouse adapter with scrape + fill
+4. Normalizer (RawScrape → JobPostingDto)
+5. Review UI in Preact popup
