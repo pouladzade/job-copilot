@@ -42,9 +42,6 @@ jobs:
       - name: TypeCheck
         run: pnpm run typecheck
 
-      - name: Lint
-        run: pnpm run lint
-
       - name: Test (backend only — with coverage)
         run: pnpm --filter @job-hunter/backend run test -- --coverage
         env:

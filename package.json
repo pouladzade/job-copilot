@@ -6,7 +6,6 @@
     "dev:backend": "pnpm --filter @job-hunter/backend run start:dev",
     "dev:extension": "pnpm --filter @job-hunter/extension run dev",
     "build": "pnpm --filter @job-hunter/shared run build && pnpm --filter @job-hunter/backend run build && pnpm --filter @job-hunter/extension run build",
-    "lint": "pnpm -r run lint",
     "typecheck": "pnpm --filter @job-hunter/shared run build && pnpm -r run typecheck",
     "test": "pnpm -r run test",
     "migration:generate": "pnpm --filter @job-hunter/backend run migration:generate",

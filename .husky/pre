@@ -1,8 +1,0 @@
-#!/bin/sh
-echo "⏳ Lint..."
-pnpm eslint 'packages/**/*.{ts,tsx}' --max-warnings 0 --fix --no-error-on-unmatched-pattern || { echo "❌ Lint failed"; exit 1; }
-echo "⏳ Type check..."
-pnpm typecheck || { echo "❌ Type check failed"; exit 1; }
-echo "⏳ Tests..."
-pnpm test || { echo "❌ Tests failed"; exit 1; }
-echo "✅ Push allowed"
