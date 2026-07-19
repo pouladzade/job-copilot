@@ -20,7 +20,7 @@ export class ResponseValidatorService {
       return { valid: false, errors: ['Failed to parse JSON from DeepSeek response'] };
     }
 
-    const draft = plainToInstance(ApplicationDraftDto, parsed as object);
+    const draft = plainToInstance(ApplicationDraftDto, parsed as object) as ApplicationDraftDto;
     const validationErrors: ValidationError[] = await validate(draft);
 
     if (validationErrors.length > 0) {
