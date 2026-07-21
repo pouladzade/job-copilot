@@ -9,6 +9,17 @@ describe('LLM API Integration', () => {
     const url = 'http://localhost:11434/v1';
     const model = 'qwen2.5-coder:7b';
 
+    // Skip if Ollama is not running (CI environments)
+    let healthOk = false;
+    try {
+      const h = await fetch(`${url}/models`, { signal: AbortSignal.timeout(2000) });
+      healthOk = h.ok;
+    } catch { /* unreachable */ }
+    if (!healthOk) {
+      console.warn('⚠ Ollama not reachable — skipping integration test');
+      return;
+    }
+
     const resp = await fetch(`${url}/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -18,6 +29,7 @@ describe('LLM API Integration', () => {
         temperature: 0.4,
         max_tokens: 100,
       }),
+      signal: AbortSignal.timeout(15000),
     });
 
     console.log(`Ollama status: ${resp.status}`);
