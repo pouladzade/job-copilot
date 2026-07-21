@@ -7,28 +7,28 @@ import type { JSX } from 'preact';
 const colors = {
   primary: '#007ACC',
   primaryLight: '#1A8CD9',
-  primaryBg: 'rgba(0,122,204,0.15)',
-  primaryBorder: 'rgba(0,122,204,0.3)',
-  primaryFg: '#D4D4D4',
+  primaryBg: 'rgba(0,122,204,0.08)',
+  primaryBorder: 'rgba(0,122,204,0.2)',
+  primaryFg: '#1E1E1E',
   accent: '#007ACC',
   accentHover: '#1A8CD9',
   purple: '#5C6BC0',
-  purpleBg: 'rgba(92,107,192,0.15)',
-  purpleBorder: 'rgba(92,107,192,0.3)',
+  purpleBg: 'rgba(92,107,192,0.08)',
+  purpleBorder: 'rgba(92,107,192,0.2)',
   green: '#40A860',
-  greenBg: 'rgba(64,168,96,0.15)',
-  greenBorder: 'rgba(64,168,96,0.3)',
+  greenBg: 'rgba(64,168,96,0.08)',
+  greenBorder: 'rgba(64,168,96,0.2)',
   orange: '#D4A017',
-  orangeBg: 'rgba(212,160,23,0.15)',
+  orangeBg: 'rgba(212,160,23,0.08)',
   destructive: '#D65757',
-  destructiveBg: 'rgba(214,87,87,0.15)',
-  destructiveBorder: 'rgba(214,87,87,0.3)',
-  surface: '#2D2D2D',
-  surfaceHover: '#333333',
-  surfaceBorder: 'rgba(255,255,255,0.08)',
-  textPrimary: '#D4D4D4',
-  textSecondary: '#9D9D9D',
-  textMuted: '#6A6A6A',
+  destructiveBg: 'rgba(214,87,87,0.08)',
+  destructiveBorder: 'rgba(214,87,87,0.2)',
+  surface: '#F3F3F3',
+  surfaceHover: '#E8E8E8',
+  surfaceBorder: 'rgba(0,0,0,0.08)',
+  textPrimary: '#1E1E1E',
+  textSecondary: '#616161',
+  textMuted: '#8E8E90',
   textWhite: '#FFFFFF',
 } as const;
 
@@ -132,7 +132,7 @@ function Container(p: { readonly children: preact.ComponentChildren }): JSX.Elem
         fontSize: '13px',
         lineHeight: 1.5,
         color: colors.textPrimary,
-        backgroundColor: '#1E1E1E',
+        backgroundColor: '#FFFFFF',
         overflow: 'hidden',
       }}
     >
@@ -633,7 +633,7 @@ function IdlePanel(p: {
             (e.target as HTMLElement).style.backgroundColor = colors.primary;
           }}
         >
-          Scrape &#38; Tailor
+          Summary
         </button>
         <button
           onClick={p.onCover}
