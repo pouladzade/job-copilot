@@ -1,5 +1,9 @@
 import { render } from 'preact';
 import { useCallback, useEffect, useState } from 'preact/hooks';
+import type { JSX } from "preact";
+
+const c = { primary:'#0D9488',primaryLight:'#14B8A6',primaryBg:'#F0FDFA',primaryBorder:'#99F6E4',primaryFg:'#134E4A',accent:'#EA580C',purple:'#7C3AED',purpleBg:'#F5F3FF',purpleBorder:'#C4B5FD',green:'#16A34A',greenBg:'#F0FDF4',greenBorder:'#86EFAC',destructive:'#DC2626',destructiveBg:'#FEF2F2',destructiveBorder:'#FECACA',surface:'#FFFFFF',surfaceHover:'#F8FAFC',surfaceBorder:'#E2E8F0',textPrimary:'#0F172A',textSecondary:'#475569',textMuted:'#94A3B8',textWhite:'#FFFFFF', } as const;
+const t = { radiusSm:'6px',radiusMd:'8px',radiusLg:'12px',shadowSm:'0 1px 2px rgba(0,0,0,0.06)',fontFamily:'"Inter",system-ui,-apple-system,sans-serif', } as const;
 
 interface ProfileData { readonly fullName: string; readonly contactEmail: string; readonly contactPhone: string; readonly city: string; readonly state: string; readonly linkedin: string; readonly portfolioUrl: string; readonly githubUrl: string; readonly workAuthorization: string; readonly salaryExpectations: string; readonly noticePeriod: string; readonly willingToRelocate: string; readonly yearsOfExperience: number; readonly currentTitle: string; readonly currentCompany: string; readonly highestDegree: string; readonly university: string; readonly fieldOfStudy: string; readonly desiredRole: string; readonly preferredLocation: string; readonly remotePreference: string; }
 interface LlmConfig { readonly apiUrl: string; readonly apiKey: string; readonly model: string; readonly resume: string; readonly prmExtractAdd: string; readonly prmTailorAdd: string; readonly prmCoverAdd: string; readonly prmScreeningAdd: string; readonly prmQuickAdd: string; readonly prmFormAdd: string; }
@@ -228,16 +232,16 @@ const PROFILE_FIELDS: ReadonlyArray<{key:keyof ProfileData;label:string;type:str
   {key:'remotePreference',label:'Remote Preference',type:'text',placeholder:'Remote / Hybrid / On-site'},
 ];
 
-const inputS={width:'100%',padding:'9px 12px',fontSize:'14px',border:'1px solid #ccc',borderRadius:'6px',boxSizing:'border-box'as const,fontFamily:'inherit'};
-const fieldLabel={fontSize:'13px',fontWeight:600,color:'#444',marginBottom:'4px',display:'block'};
-const sectionTitle={fontSize:'16px',fontWeight:700,color:'#333',marginBottom:'10px',marginTop:'22px',borderBottom:'1px solid #e8e8e8',paddingBottom:'8px'};
-const promptReadonly={width:'100%',padding:'8px 10px',fontSize:'11px',border:'1px solid #e0e0e0',borderRadius:'6px',backgroundColor:'#fafafa',color:'#555',fontFamily:'monospace',boxSizing:'border-box'as const,lineHeight:1.45,whiteSpace:'pre-wrap'as const,overflowY:'auto'as const,maxHeight:'220px'};
-const customArea={width:'100%',height:'80px',padding:'8px 10px',fontSize:'12px',border:'1px solid #c8e6c9',borderRadius:'6px',backgroundColor:'#f1f8e9',resize:'vertical',fontFamily:'monospace',boxSizing:'border-box'as const,lineHeight:1.4};
-const slotCard={padding:'12px',border:'1px solid #e0e0e0',borderRadius:'8px',marginBottom:'14px',backgroundColor:'#fff'};
+const inputS={width:'100%',padding:'10px 12px',fontSize:'14px',border:`1px solid ${c.surfaceBorder}`,borderRadius:t.radiusSm,boxSizing:'border-box'as const,fontFamily:t.fontFamily,outline:'none',transition:'border-color 150ms',backgroundColor:c.surface,color:c.textPrimary} as const;
+const fieldLabel={fontSize:'13px',fontWeight:600,color:c.textSecondary,marginBottom:'4px',display:'block'};
+const sectionTitle={fontSize:'16px',fontWeight:700,color:c.textPrimary,marginBottom:'14px',marginTop:'28px',borderBottom:`1px solid ${c.surfaceBorder}`,paddingBottom:'10px'};
+const promptReadonly={width:'100%',padding:'10px 12px',fontSize:'11px',border:`1px solid ${c.surfaceBorder}`,borderRadius:t.radiusSm,backgroundColor:c.surfaceHover,color:c.textSecondary,fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box'as const,lineHeight:1.5,whiteSpace:'pre-wrap'as const,overflowY:'auto'as const,maxHeight:'220px'};
+const customArea={width:'100%',height:'80px',padding:'8px 10px',fontSize:'12px',border:`1px solid ${c.primaryBorder}`,borderRadius:t.radiusSm,backgroundColor:c.primaryBg,resize:'vertical',fontFamily:t.fontFamily,boxSizing:'border-box'as const,lineHeight:1.4,outline:'none',color:c.textPrimary};
+const slotCard={padding:'14px',border:`1px solid ${c.surfaceBorder}`,borderRadius:t.radiusMd,marginBottom:'14px',backgroundColor:c.surface};
 const slotHeader={display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:'4px'};
-const slotTitle={fontSize:'13px',fontWeight:700,color:'#2e7d32'};
-const slotDesc={fontSize:'11px',color:'#666',marginBottom:'8px'};
-const slotTag={fontSize:'10px',fontWeight:600,color:'#999',textTransform:'uppercase'as const,letterSpacing:'0.04em'};
+const slotTitle={fontSize:'13px',fontWeight:700,color:c.primary};
+const slotDesc={fontSize:'11px',color:c.textMuted,marginBottom:'10px'};
+const slotTag={fontSize:'10px',fontWeight:600,color:c.textMuted,textTransform:'uppercase'as const,letterSpacing:'0.04em'};
 
 export function OptionsApp(): preact.JSX.Element {
   const [profile,setProfile]=useState(PROFILE_DEFAULTS);
@@ -289,10 +293,10 @@ export function OptionsApp(): preact.JSX.Element {
   },[importJson,updateP]);
 
   return(
-    <div style={{fontFamily:'system-ui, sans-serif',fontSize:'15px',maxWidth:'860px',margin:'0 auto',padding:'30px 24px'}}>
+    <div style={{fontFamily:t.fontFamily,fontSize:'15px',maxWidth:'860px',margin:'0 auto',padding:'30px 24px',color:c.textPrimary}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px'}}>
-        <h1 style={{margin:0,fontSize:'22px',fontWeight:700,color:'#1976d2'}}>⚙️ Settings</h1>
-        <span style={{fontSize:'14px',fontWeight:600,color:saveStatus.startsWith('✓')?'#2e7d32':'#999'}}>{saveStatus}</span>
+        <h1 style={{margin:0,fontSize:'24px',fontWeight:800,color:c.primary,letterSpacing:'-0.02em'}}>⚙️ Settings</h1>
+        <span style={{fontSize:'14px',fontWeight:600,color:saveStatus.startsWith('✓')?c.green:c.textMuted}}>{saveStatus}</span>
       </div>
 
       {/* LLM Config */}
@@ -303,7 +307,7 @@ export function OptionsApp(): preact.JSX.Element {
 
       {/* Resume */}
       <div style={sectionTitle}>📄 Resume (Markdown)</div>
-      <textarea value={llm.resume} onInput={e=>updateLlm('resume',(e.target as HTMLTextAreaElement).value)} placeholder="Paste your full resume in markdown here..." style={{width:'100%',height:'150px',padding:'8px 10px',fontSize:'12px',border:'1px solid #ccc',borderRadius:'4px',resize:'vertical',fontFamily:'monospace',boxSizing:'border-box'}}/>
+      <textarea value={llm.resume} onInput={e=>updateLlm('resume',(e.target as HTMLTextAreaElement).value)} placeholder="Paste your full resume in markdown here..." style={{width:'100%',height:'150px',padding:'10px 12px',fontSize:'12px',border:`1px solid ${c.surfaceBorder}`,borderRadius:t.radiusSm,resize:'vertical',fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box',outline:'none',color:c.textPrimary,backgroundColor:c.surface}}/>
 
       {/* Prompt Templates — collapsible */}
       <div style={{...sectionTitle,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center'}} onClick={()=>setShowPrompts(!showPrompts)}>
@@ -312,7 +316,7 @@ export function OptionsApp(): preact.JSX.Element {
       </div>
       {showPrompts&&<div>
         <p style={{fontSize:'11px',color:'#666',margin:'0 0 12px',lineHeight:1.5}}>
-          Base prompts are locked to keep the JSON output structure stable. You can add short guidance per template (tone, emphasis, length, things to avoid). The runner injects your text into a fixed <code style={{backgroundColor:'#f0f0f0',padding:'0 4px',borderRadius:'3px'}}>User Custom Instructions</code> slot before the data section.
+          Base prompts are locked to keep the JSON output structure stable. You can add short guidance per template (tone, emphasis, length, things to avoid). The runner injects your text into a fixed <code style={{backgroundColor:c.primaryBg,color:c.primaryFg,padding:'0 4px',borderRadius:'3px',fontSize:'11px'}}>User Custom Instructions</code> slot before the data section.
         </p>
         {PROMPT_SLOTS.map(slot=>{
           const isOpen=expandedSlot===slot.key;
@@ -321,7 +325,7 @@ export function OptionsApp(): preact.JSX.Element {
             <div key={slot.key} style={slotCard}>
               <div style={slotHeader}>
                 <span style={slotTitle}>{slot.label}</span>
-                <button onClick={()=>setExpandedSlot(isOpen?null:slot.key)} style={{padding:'2px 10px',fontSize:'11px',fontWeight:600,backgroundColor:isOpen?'#1976d2':'#fff',color:isOpen?'#fff':'#1976d2',border:'1px solid #1976d2',borderRadius:'4px',cursor:'pointer'}}>{isOpen?'Hide base prompt':'View base prompt'}</button>
+                <button onClick={()=>setExpandedSlot(isOpen?null:slot.key)} style={{padding:'2px 10px',fontSize:'11px',fontWeight:600,backgroundColor:isOpen?c.primary:c.surface,color:isOpen?c.textWhite:c.primary,border:`1px solid ${c.primary}`,borderRadius:t.radiusSm,transition:'all 150ms',cursor:'pointer'}}>{isOpen?'Hide base prompt':'View base prompt'}</button>
               </div>
               <div style={slotDesc}>{slot.description}</div>
               {isOpen&&<pre style={promptReadonly}>{slot.base}</pre>}
@@ -339,10 +343,10 @@ export function OptionsApp(): preact.JSX.Element {
 
       {/* JSON Import */}
       <div style={sectionTitle}>📥 Quick Import (Profile JSON)</div>
-      <textarea value={importJson} onInput={e=>setImportJson((e.target as HTMLTextAreaElement).value)} placeholder='Paste JSON (e.g. {"fullName":"John","contactEmail":"john@example.com",...})' style={{width:'100%',height:'56px',padding:'6px 10px',fontSize:'11px',border:'1px solid #ccc',borderRadius:'4px',resize:'vertical',fontFamily:'monospace',boxSizing:'border-box'}}/>
+      <textarea value={importJson} onInput={e=>setImportJson((e.target as HTMLTextAreaElement).value)} placeholder='Paste JSON (e.g. {"fullName":"John","contactEmail":"john@example.com",...})' style={{width:'100%',height:'56px',padding:'8px 10px',fontSize:'11px',border:`1px solid ${c.surfaceBorder}`,borderRadius:t.radiusSm,resize:'vertical',fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box',outline:'none',color:c.textPrimary,backgroundColor:c.surface}}/>
       <div style={{display:'flex',gap:'8px',alignItems:'center',marginTop:'6px',marginBottom:'10px'}}>
-        <button onClick={doImport} style={{padding:'6px 16px',fontSize:'12px',fontWeight:600,backgroundColor:'#ff9800',color:'#fff',border:'none',borderRadius:'4px',cursor:'pointer'}}>📥 Import</button>
-        {importStatus!==''&&<span style={{fontSize:'12px',color:importStatus.startsWith('✓')?'#2e7d32':'#c62828'}}>{importStatus}</span>}
+        <button onClick={doImport} style={{padding:'6px 16px',fontSize:'12px',fontWeight:600,backgroundColor:c.accent,color:'#fff',border:'none',borderRadius:'4px',cursor:'pointer'}}>📥 Import</button>
+        {importStatus!==''&&<span style={{fontSize:'12px',color:importStatus.startsWith('✓')?c.green:c.destructive}}>{importStatus}</span>}
       </div>
 
       {/* Profile Fields */}
@@ -350,7 +354,7 @@ export function OptionsApp(): preact.JSX.Element {
       <div style={{maxHeight:'none'}}>
         {PROFILE_FIELDS.map(f=>(<div key={f.key} style={{marginBottom:'10px'}}><label style={fieldLabel}>{f.label}</label><input type={f.type} value={profile[f.key]} onInput={e=>{const v=(e.target as HTMLInputElement).value;updateP(f.key,f.type==='number'?(v===''?0:parseInt(v,10)||0):v)}} placeholder={f.placeholder} style={inputS}/></div>))}
       </div>
-      <button onClick={doSave} disabled={saving} style={{width:'100%',padding:'14px',fontSize:'16px',fontWeight:700,backgroundColor:saving?'#81c784':'#2e7d32',color:'#fff',border:'none',borderRadius:'6px',cursor:saving?'not-allowed':'pointer',marginTop:'20px',transition:'background-color 0.2s'}}>{saving?'⏳ Saving...':'💾 Save All Settings'}</button>
+      <button onClick={doSave} disabled={saving} style={{width:'100%',padding:'14px',fontSize:'16px',fontWeight:700,backgroundColor:saving?c.primaryLight:c.primary,color:c.textWhite,border:'none',borderRadius:t.radiusSm,cursor:saving?'not-allowed':'pointer',marginTop:'24px',transition:'all 150ms',boxShadow:t.shadowSm}}>{saving?'⏳ Saving...':'💾 Save All Settings'}</button>
     </div>
   );
 }
