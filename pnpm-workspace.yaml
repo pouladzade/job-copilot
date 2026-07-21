@@ -1,5 +1,4 @@
 packages:
   - 'packages/*'
 allowBuilds:
-  '@scarf/scarf': true
-  esbuild: true
+  esbuild: false

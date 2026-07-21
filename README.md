@@ -1,233 +1,96 @@
-# Job Hunter Agent
+# AI Job Copilot
 
-[![CI](https://github.com/pouladzade/job-hunter-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/pouladzade/job-hunter-agent/actions/workflows/ci.yml)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22-green)](https://nodejs.org/)
-[![pnpm](https://img.shields.io/badge/pnpm-%3E%3D9-orange)](https://pnpm.io/)
-[![NestJS](https://img.shields.io/badge/NestJS-11-ea2845)](https://nestjs.com/)
-[![License](https://img.shields.io/badge/license-Private-red)](./LICENSE)
+A browser extension that scrapes any job posting, tailors your application with AI, fills web forms, and crafts message replies — all without ever submitting anything automatically.
 
-A personal, local-first tool that helps you go from "found a job listing" to "submitted a tailored application" faster — with a human always in control of every meaningful action.
+**No backend. No database. No Docker.** Everything runs in your browser. Your API key, resume, and profile stay in Chrome's local storage.
 
-## Overview
+## What it does
 
-1. **Scrape** job postings from supported sites via a browser extension
-2. **Tailor** applications using an OpenAI-compatible API — generates professional summaries, cover letters, and screening-question answers
-3. **Review** everything in a UI with confidence indicators and inline editing
-4. **Fill** web form fields only after explicit user approval
-5. **Persist** every application to a local database for search and analysis
+- **🔍 Scrape & Tailor** — extract job details from any job board (Greenhouse, LinkedIn, Lever, Ashby, Personio, company career pages, etc.) and generate a tailored application
+- **⚡ Quick Match** — evaluate whether a job fits your profile before spending tokens on a full generation
+- **✍️ Fill Form** — scrape form fields from any web form, match them to your profile via AI, and inject the values with one click
+- **💬 Message Reply** — craft articulate LinkedIn message replies based on your intent and resume
+- **📋 Copy to clipboard** on every piece of generated content
+- **⚙️ Options page** — configure LLM provider, API key, model, resume, profile fields, and all 6 prompt templates
 
-**Non-goals:** fully autonomous applying, multi-tenancy, external network exposure. Everything runs on localhost.
+## Quick Start
+
+1. Clone and build:
+```bash
+pnpm install
+pnpm build
+```
+
+2. Load in Chrome:
+   - Go to `chrome://extensions`
+   - Enable "Developer mode"
+   - Click "Load unpacked" → select `packages/extension/dist`
+
+3. Configure:
+   - Right-click the extension icon → **Options**
+   - Set your LLM provider (DeepSeek, OpenAI, Ollama, or any OpenAI-compatible API)
+   - Paste your resume and profile info
+   - Click **💾 Save All Settings**
+
+4. Use:
+   - Navigate to any job posting
+   - Click the extension icon
+   - Choose **🔍 Scrape & Tailor**, **⚡ Quick Match**, or **💬 Message Reply**
+
+## Supported LLM Providers
+
+| Provider | API URL | API Key Required |
+|----------|---------|-----------------|
+| DeepSeek | `https://api.deepseek.com/v1` | Yes (`sk-...`) |
+| Ollama (local) | `http://localhost:11434/v1` | No |
+| OpenAI | `https://api.openai.com/v1` | Yes (`sk-...`) |
+| Groq | `https://api.groq.com/openai/v1` | Yes |
+| Any OpenAI-compatible | Custom | Depends |
+
+Local providers (localhost/127.0.0.1) automatically skip API key checks and `response_format`.
+
+## Settings
+
+All configurable via the **Options** page (right-click extension → Options, or `chrome://extensions` → AI Job Copilot → Extension options):
+
+| Section | Fields |
+|---------|--------|
+| 🤖 LLM Provider | API URL, API Key, Model |
+| 📄 Resume | Your full resume in Markdown |
+| 📝 Prompt Templates | 6 editable prompts (Extract, Tailor, Cover Letter, Screening, Quick Match, Form Match) |
+| 👤 Profile Fields | 21 fields (name, email, phone, LinkedIn, GitHub, work authorization, salary, education, etc.) |
+| 📥 Quick Import | Paste a JSON profile to fill all fields at once |
+
+## Permissions
+
+- **`<all_urls>`** — content script injection on any site
+- **`storage`** — save settings and application drafts
+- **`scripting`** — inject content script on demand
+- **`activeTab`** — access the current tab
 
 ## Architecture
 
 ```
-┌───────────────────────────────────────────────────────── ┐
-│                      Browser Extension                   │
-│  ┌──────────┐  ┌──────────┐  ┌──────────────────────┐    │
-│  │  Popup   │  │ Content  │  │      Adapters        │    │
-│  │ (Preact) │  │  Script  │  │  (greenhouse, lever, │    │
-│  │          │  │          │  │   ashby, indeed, ...)│    │
-│  └────┬─────┘  └────┬─────┘  └──────────┬───────────┘    │
-│       │             │                    │               │
-└───────┼─────────────┼────────────────────┼───────────────┘
-        │             │                    │
-        ▼             ▼                    ▼
-┌─────────────────────────────────────────────────────────┐
-│                  NestJS Backend (localhost:4001)        │
-│  ┌───────────┐  ┌──────────┐  ┌────────────────────┐    │
-│  │Application│  │ LLM      │  │     Resume         │    │
-│  │ Controller│  │ Service  │  │    Management      │    │
-│  └─────┬─────┘  └────┬─────┘  └─────────┬──────────┘    │
-│        │              │                  │              │
-│  ┌─────┴──────────────┴──────────────────┴─────────-─┐  │
-│  │              ApplicationService                   │  │
-│  │     (orchestrator: PII → generate → validate)     │  │
-│  └───────────────────────┬───────────────────────────┘  │
-│                          │                              │
-│  ┌───────────────────────┴───────────────────────────┐  │
-│  │              TypeORM + local database             │  │
-│  └───────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────┘
+Popup (Preact) ←→ Background Service Worker ←→ LLM API (DeepSeek/Ollama/OpenAI)
+       ↕                                              ↕
+Content Script — injects into web pages, scrapes text & forms
 ```
+
+- **Popup:** Main UI (scrape, quick match, reply, fill form, copy)
+- **Background Service Worker:** All LLM API calls, message relay, prompt management
+- **Content Script:** Page text extraction, form scraping, form filling via DOM events
+- **Options Page:** Full settings UI, opens in a dedicated tab
+- **Storage:** `chrome.storage.local` — no external database needed
 
 ## Tech Stack
 
-| Layer            | Technology                             |
-| ---------------- | -------------------------------------- |
-| Backend          | NestJS (TypeScript), TypeORM           |
-| Database         | Local (via TypeORM)                    |
-| Extension        | TypeScript, Preact, Vite (Manifest V3) |
-| AI               | OpenAI-compatible API (via OpenAI SDK) |
-| Validation       | class-validator, class-transformer     |
-| Package manager  | pnpm (workspaces)                      |
-| Containerization | Docker Compose                         |
-
-## Prerequisites
-
-- **Node.js** ≥ 22
-- **pnpm** ≥ 9
-- **Docker** and **Docker Compose** (for the database)
-- An **API key** for an OpenAI-compatible provider (e.g., [DeepSeek](https://platform.deepseek.com), [OpenAI](https://platform.openai.com))
-
-## Quick Start
-
-### 1. Clone and install
-
-```bash
-git clone git@github.com:pouladzade/job-hunter-agent.git
-cd job-hunter-agent
-pnpm install
-```
-
-### 2. Configure environment
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and add your API key:
-
-```
-LLM_API_KEY=sk-your-key-here
-DB_HOST=localhost
-DB_PORT=5433
-DB_USER=jobhunter
-DB_PASSWORD=jobhunter
-DB_NAME=jobhunter
-```
-
-### 3. Start the database
-
-```bash
-docker compose up -d
-```
-
-### 4. Start the backend
-
-```bash
-pnpm dev:backend
-```
-
-The backend starts at `http://127.0.0.1:4001`. Swagger docs at `http://127.0.0.1:4001/api/docs`.
-
-### 5. Verify it works
-
-```bash
-curl http://127.0.0.1:4001/applications/health
-# → {"status":"ok"}
-```
-
-### 6. Load the extension (Phase 5+)
-
-1. Build: `pnpm --filter @job-hunter/extension run build`
-2. Open Chrome → `chrome://extensions`
-3. Enable "Developer mode"
-4. Click "Load unpacked" → select `packages/extension/dist`
-
-## Project Structure
-
-```
-job-hunter-agent/
-├── packages/
-│   ├── backend/          # NestJS API server
-│   │   └── src/
-│   │       ├── application/   # CRUD + generate orchestration
-│   │       ├── llm/           # OpenAI-compatible API client
-│   │       ├── database/      # TypeORM entities + migrations
-│   │       ├── prompts/       # Prompt template builder
-│   │       ├── resume/        # Resume loader, merger, indexer
-│   │       └── validation/    # PII filter + response validator
-│   ├── extension/        # Chrome Extension (Manifest V3)
-│   │   └── src/
-│   │       ├── adapters/      # Per-site scrapers
-│   │       ├── popup/         # Preact review UI
-│   │       └── background.ts  # Message relay
-│   └── shared/           # Shared DTOs, constants, types
-├── data/
-│   ├── profiles/         # JSON profile variants
-│   └── resumes/          # Markdown resume variants
-├── prompts/              # LLM prompt templates (.md)
-├── docs/                 # Specs and roadmap
-├── memory-bank/          # Project context and progress tracking
-└── docker-compose.yml    # Database + backend containers
-```
-
-## API Endpoints
-
-| Method  | Path                       | Description                         |
-| ------- | -------------------------- | ----------------------------------- |
-| `GET`   | `/applications/health`     | Health check                        |
-| `POST`  | `/applications/generate`   | Generate tailored application draft |
-| `POST`  | `/applications/:id/save`   | Save user-edited draft              |
-| `GET`   | `/applications`            | List with filters + pagination      |
-| `PATCH` | `/applications/:id/status` | Update application status           |
-| `POST`  | `/resumes/refresh-index`   | Regenerate resume keyword index     |
-
-## Development
-
-### Running tests
-
-```bash
-# All tests
-pnpm test
-
-# With coverage
-pnpm test -- --coverage
-
-# E2E tests
-pnpm --filter @job-hunter/backend run test:e2e
-```
-
-### Database migrations
-
-```bash
-# Generate a migration from entity changes
-pnpm migration:generate
-
-# Apply migrations
-pnpm migration:run
-
-# Revert last migration
-pnpm migration:revert
-```
-
-### Code quality
-
-```bash
-# TypeScript type checking
-pnpm typecheck
-
-# Lint all packages
-pnpm lint
-
-# Build all packages
-pnpm build
-```
-
-## Environment Variables
-
-| Variable           | Default           | Description                                       |
-| ------------------ | ----------------- | ------------------------------------------------- |
-| `LLM_API_KEY`      | —                                                    | API key for OpenAI-compatible provider (required) |
-| `LLM_BASE_URL`     | `https://api.deepseek.com/v1`                        | Base URL for the OpenAI-compatible API            |
-| `LLM_MODEL`        | `deepseek-chat`                                      | Model name to use for generation                  |
-| `DB_HOST`          | `localhost`       | Database host                                     |
-| `DB_PORT`          | `5433`            | Database port                                     |
-| `DB_USER`          | `jobhunter`       | Database user                                     |
-| `DB_PASSWORD`      | `jobhunter`       | Database password                                 |
-| `DB_NAME`          | `jobhunter`       | Database name                                     |
-| `DATA_DIR`         | _(auto-resolved)_ | Override path to `data/`                          |
-| `PROMPTS_DIR`      | _(auto-resolved)_ | Override path to `prompts/`                       |
-
-## Design Principles
-
-- **Human-in-the-loop (HITL):** No auto-submit, ever. The user always clicks the final Submit button.
-- **LLM never touches the DOM:** Scraping and LLM code are completely separated by `JobPosting` and `ApplicationDraft` schemas.
-- **Extension owns normalization:** Adapters scrape and normalize; the backend validates but never re-normalizes.
-- **Local-first:** All data stays on your machine. Only job descriptions and resume content go to the LLM API.
-- **PII protection:** Server-side PII filter runs before any data reaches the LLM API.
+- TypeScript (strict mode)
+- Preact (popup & options UI)
+- Vite (build)
+- Jest + jsdom (tests — 26 integration tests)
+- Manifest V3 (Chrome extension)
+- pnpm (monorepo)
 
 ## License
 
-Private. Personal use tool.
+Private — not licensed for redistribution.

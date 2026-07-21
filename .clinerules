@@ -4,16 +4,6 @@
 
 # You MUST follow them. No exceptions without explicit user approval.
 
-## Architecture
-
-- Monorepo: pnpm workspaces (no Turborepo needed for this scale)
-- Backend: NestJS (TypeScript) — packages/backend
-- Browser Extension: TypeScript + Manifest V3 + Preact — packages/extension
-- Shared: packages/shared (DTOs, types, constants, API contracts)
-- Database: TypeORM + PostgreSQL 16 — packages/backend/src/database
-- Docker Compose for local dev (NestJS + PostgreSQL)
-- No external exposure — localhost only
-
 ## Memory Bank (NON-NEGOTIABLE)
 
 - Read ALL files in `memory-bank/` before executing ANY code changes
@@ -93,38 +83,6 @@
 - No trailing spaces, max 1 consecutive blank line, always end files with a newline
 - NEVER start a file with a blank line
 
-## File Structure
-
-- One NestJS module per domain (application, deepseek, resume, prompts, validation)
-- Each module: module.ts → controller.ts → service.ts → dto/*.ts
-- **DTOs live in their module's dto/ folder** — NOT a top-level dto/ directory
-  - Example: `application/dto/generate-request.dto.ts`, `deepseek/dto/token-usage.dto.ts`
-  - Each DTO: class with class-validator decorators + @ApiProperty from @nestjs/swagger
-- Shared DTOs (cross-package) in `packages/shared/src/dto/`
-- Barrel exports (index.ts) in every folder
-- Extension imports shared DTOs via `@job-hunter/shared`
-- No deep cross-package imports — use package barrel exports
-
-## Database (NON-NEGOTIABLE)
-
-- TypeORM is the single source of truth for schema (Entity classes with decorators)
-- PostgreSQL 16 with JSONB for flexible fields (screening_answers)
-- All new configurable data → database table, NEVER a constant file
-- SERIAL primary keys via `@PrimaryGeneratedColumn()` (single-user local tool, no UUID overhead needed)
-- `@nestjs/typeorm` for NestJS-native integration
-- Migrations managed via TypeORM CLI (`pnpm migration:generate` → `pnpm migration:run`)
-- `synchronize: true` in dev only — never in production
-- Migrations reviewed same as code
-
-## API Design
-
-- RESTful: `/applications` — plural nouns, no verbs in URLs
-- class-validator on all request body DTOs (NestJS ValidationPipe auto-applied)
-- Swagger @ApiProperty on all DTO fields — docs at `/api/docs`
-- Error envelope: `{ error: string, message: string }` with appropriate HTTP status
-- CORS: only `chrome-extension://` origins allowed
-- Request size limit: 50KB (express.json)
-
 ## Security
 
 - LLM_API_KEY in `.env` only — never committed, never sent to browser
@@ -145,8 +103,8 @@
 
 ## Testing (NON-NEGOTIABLE)
 
-- Unit tests: Jest on all services (files: *.spec.ts)
-- E2E tests: supertest on all endpoints (files: *.e2e-spec.ts)
+- Unit tests: Jest on all services (files: \*.spec.ts)
+- E2E tests: supertest on all endpoints (files: \*.e2e-spec.ts)
 - Coverage threshold: 95% (branches, functions, lines, statements — all ≥95%)
 - Tests must pass before any PR can be merged
 - Mock only external APIs — never mock DB or Redis
@@ -157,7 +115,7 @@
 
 - Plans + Modules docs ARE the source of truth — always update when making decisions
 - If you change architecture/tech stack → update plans/tech-stack.md + plans/architecture.md
-- If you change a module → update modules/0X-*.md
+- If you change a module → update modules/0X-\*.md
 - If you add/change a DB table → update modules/09-database.md
 - If you add a new package → update modules/README.md dependency graph
 - Before implementing any feature → check plans/ and modules/ for the spec
@@ -182,28 +140,17 @@
 
 - Input validation: class-validator on EVERY request body DTO — no exceptions
 - SQL injection: use TypeORM parameterized queries (QueryBuilder or Repository) — never raw SQL with user input
-- CORS: whitelist `chrome-extension://` origins only — never allow '*'
+- CORS: whitelist `chrome-extension://` origins only — never allow '\*'
 - Helmet: add HTTP security headers (XSS, clickjack, MIME-sniff)
 - Never expose stack traces in error responses
 - All data processing is local — no multi-tenancy, no user auth needed
-
-## NestJS Patterns
-
-- No auth guards needed (local-only tool, single user)
-- Middleware: only for cross-cutting concerns (request ID, logging, CORS)
-- Interceptors: response transformation, logging, token usage tracking
-- Pipes: class-validator validation (auto-applied via ValidationPipe in main.ts)
-- Filters: global exception filter → `{ error: string, message: string }` envelope
-- Use forwardRef() for all circular module dependencies
-- @nestjs/config for environment variables
-- @nestjs/swagger for API documentation
 
 ## When Generating Code
 
 - Read `memory-bank/` FIRST — update it after any significant change
 - If you make any architectural/design decision → update `docs/specs/implementation-spec.md` immediately
 - Never assume — when in doubt, consult `docs/` docs first
-- All new backend code: module.ts + controller.ts + service.ts + dto/*.ts + spec files
+- All new backend code: module.ts + controller.ts + service.ts + dto/\*.ts + spec files
 - All new DB entities: TypeORM entity class + migration
 - Run `pnpm typecheck` after generating code — fix errors before presenting result
 - Use latest stable package versions — check registry when adding dependencies

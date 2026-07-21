@@ -1,0 +1,99 @@
+/**
+ * @jest-environment node
+ *
+ * LLM Integration Test — verifies the actual fetch path used by the extension.
+ * Run: pnpm --filter @job-hunter/extension exec jest src/__tests__/llm-integration.spec.ts --forceExit --verbose
+ */
+describe('LLM API Integration', () => {
+  it('Ollama /v1/chat/completions works without auth', async () => {
+    const url = 'http://localhost:11434/v1';
+    const model = 'qwen2.5-coder:7b';
+
+    const resp = await fetch(`${url}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: 'Reply with ONLY: {"ok":true}' }],
+        temperature: 0.4,
+        max_tokens: 100,
+      }),
+    });
+
+    console.log(`Ollama status: ${resp.status}`);
+    const json = (await resp.json()) as Record<string, unknown>;
+    const content = ((json['choices'] as Array<{ message: { content: string } }>)?.[0]?.message?.content ?? '');
+    console.log(`Ollama response: ${content}`);
+    console.log(`Tokens: ${JSON.stringify(json['usage'])}`);
+
+    expect(resp.ok).toBe(true);
+    expect(content).toContain('ok');
+  });
+
+  it('Fake DeepSeek key returns 401/403', async () => {
+    const url = 'https://api.deepseek.com/v1';
+
+    const resp = await fetch(`${url}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer sk-this-is-fake-key',
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [{ role: 'user', content: 'Reply: {"ok":true}' }],
+        response_format: { type: 'json_object' },
+        temperature: 0.4,
+        max_tokens: 100,
+      }),
+    });
+
+    const body = await resp.text().catch(() => 'No body');
+    console.log(`Fake key returned: ${resp.status}`);
+    console.log(`Response body: ${body.slice(0, 300)}`);
+
+    expect(resp.ok).toBe(false);
+    expect([401, 403]).toContain(resp.status);
+  });
+
+  it('Real DeepSeek API — use env LLM_API_KEY', async () => {
+    // This test requires LLM_API_KEY to be set in the environment
+    // The extension would read it from chrome.storage.local
+    const apiKey = process.env['LLM_API_KEY'];
+    if (!apiKey) {
+      console.warn('⚠ LLM_API_KEY not set — skipping real DeepSeek test');
+      return;
+    }
+
+    const url = 'https://api.deepseek.com/v1';
+
+    const resp = await fetch(`${url}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [{ role: 'user', content: 'Reply with ONLY valid JSON: {"ok":true}' }],
+        response_format: { type: 'json_object' },
+        temperature: 0.4,
+        max_tokens: 100,
+      }),
+    });
+
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => 'No body');
+      console.error(`❌ DeepSeek ${resp.status}: ${body.slice(0, 500)}`);
+      throw new Error(`DeepSeek API error ${resp.status}`);
+    }
+
+    const json = (await resp.json()) as Record<string, unknown>;
+    const content = ((json['choices'] as Array<{ message: { content: string } }>)?.[0]?.message?.content ?? '');
+    console.log(`DeepSeek: ${content}`);
+    console.log(`Tokens: ${JSON.stringify(json['usage'])}`);
+
+    expect(resp.ok).toBe(true);
+    expect(content).toContain('ok');
+  });
+});
