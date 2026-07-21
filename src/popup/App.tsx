@@ -5,30 +5,30 @@ import type { JSX } from 'preact';
 
 // ── Design Tokens ────────────────────────────────────────────────────
 const colors = {
-  primary: '#0D9488',
-  primaryLight: '#14B8A6',
-  primaryBg: '#F0FDFA',
-  primaryBorder: '#99F6E4',
-  primaryFg: '#134E4A',
-  accent: '#EA580C',
-  accentHover: '#C2410C',
-  purple: '#7C3AED',
-  purpleBg: '#F5F3FF',
-  purpleBorder: '#C4B5FD',
-  green: '#16A34A',
-  greenBg: '#F0FDF4',
-  greenBorder: '#86EFAC',
-  orange: '#EA580C',
-  orangeBg: '#FFF7ED',
-  destructive: '#DC2626',
-  destructiveBg: '#FEF2F2',
-  destructiveBorder: '#FECACA',
-  surface: '#FFFFFF',
-  surfaceHover: '#F8FAFC',
-  surfaceBorder: '#E2E8F0',
-  textPrimary: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#94A3B8',
+  primary: '#EA580C',
+  primaryLight: '#F97316',
+  primaryBg: 'rgba(234,88,12,0.12)',
+  primaryBorder: 'rgba(234,88,12,0.25)',
+  primaryFg: '#F5F0EB',
+  accent: '#F59E0B',
+  accentHover: '#FBBF24',
+  purple: '#A855F7',
+  purpleBg: 'rgba(168,85,247,0.12)',
+  purpleBorder: 'rgba(168,85,247,0.25)',
+  green: '#22C55E',
+  greenBg: 'rgba(34,197,94,0.12)',
+  greenBorder: 'rgba(34,197,94,0.25)',
+  orange: '#F59E0B',
+  orangeBg: 'rgba(245,158,11,0.12)',
+  destructive: '#EF4444',
+  destructiveBg: 'rgba(239,68,68,0.12)',
+  destructiveBorder: 'rgba(239,68,68,0.25)',
+  surface: '#24201C',
+  surfaceHover: '#2D2824',
+  surfaceBorder: 'rgba(234,88,12,0.12)',
+  textPrimary: '#F5F0EB',
+  textSecondary: '#A8998B',
+  textMuted: '#6B5D53',
   textWhite: '#FFFFFF',
 } as const;
 
@@ -132,6 +132,7 @@ function Container(p: { readonly children: preact.ComponentChildren }): JSX.Elem
         fontSize: '13px',
         lineHeight: 1.5,
         color: colors.textPrimary,
+        backgroundColor: '#1A1512',
         overflow: 'hidden',
       }}
     >
@@ -211,7 +212,7 @@ function ErrorPanel(p: {
             Error
           </span>
         </div>
-        <p style={{ margin: 0, color: '#991B1B', fontSize: '12px' }}>{p.state.message}</p>
+        <p style={{ margin: 0, color: '#FCA5A5', fontSize: '12px' }}>{p.state.message}</p>
         {p.state.details && (
           <pre
             style={{
@@ -251,7 +252,7 @@ function ErrorPanel(p: {
                   padding: '8px',
                   fontSize: '10px',
                   color: colors.textPrimary,
-                  backgroundColor: '#F8FAFC',
+                  backgroundColor: colors.surfaceHover,
                   border: `1px solid ${colors.surfaceBorder}`,
                   borderRadius: tokens.radiusSm,
                   whiteSpace: 'pre-wrap',

@@ -2,7 +2,7 @@ import { render } from 'preact';
 import { useCallback, useEffect, useState } from 'preact/hooks';
 import type { JSX } from "preact";
 
-const c = { primary:'#0D9488',primaryLight:'#14B8A6',primaryBg:'#F0FDFA',primaryBorder:'#99F6E4',primaryFg:'#134E4A',accent:'#EA580C',purple:'#7C3AED',purpleBg:'#F5F3FF',purpleBorder:'#C4B5FD',green:'#16A34A',greenBg:'#F0FDF4',greenBorder:'#86EFAC',destructive:'#DC2626',destructiveBg:'#FEF2F2',destructiveBorder:'#FECACA',surface:'#FFFFFF',surfaceHover:'#F8FAFC',surfaceBorder:'#E2E8F0',textPrimary:'#0F172A',textSecondary:'#475569',textMuted:'#94A3B8',textWhite:'#FFFFFF', } as const;
+const c = { primary:'#EA580C',primaryLight:'#F97316',primaryBg:'rgba(234,88,12,0.12)',primaryBorder:'rgba(234,88,12,0.25)',primaryFg:'#F5F0EB',accent:'#F59E0B',purple:'#A855F7',purpleBg:'rgba(168,85,247,0.12)',purpleBorder:'rgba(168,85,247,0.25)',green:'#22C55E',greenBg:'rgba(34,197,94,0.12)',greenBorder:'rgba(34,197,94,0.25)',destructive:'#EF4444',destructiveBg:'rgba(239,68,68,0.12)',destructiveBorder:'rgba(239,68,68,0.25)',surface:'#24201C',surfaceHover:'#2D2824',surfaceBorder:'rgba(234,88,12,0.12)',textPrimary:'#F5F0EB',textSecondary:'#A8998B',textMuted:'#6B5D53',textWhite:'#FFFFFF', } as const;
 const t = { radiusSm:'6px',radiusMd:'8px',radiusLg:'12px',shadowSm:'0 1px 2px rgba(0,0,0,0.06)',fontFamily:'"Inter",system-ui,-apple-system,sans-serif', } as const;
 
 interface ProfileData { readonly fullName: string; readonly contactEmail: string; readonly contactPhone: string; readonly city: string; readonly state: string; readonly linkedin: string; readonly portfolioUrl: string; readonly githubUrl: string; readonly workAuthorization: string; readonly salaryExpectations: string; readonly noticePeriod: string; readonly willingToRelocate: string; readonly yearsOfExperience: number; readonly currentTitle: string; readonly currentCompany: string; readonly highestDegree: string; readonly university: string; readonly fieldOfStudy: string; readonly desiredRole: string; readonly preferredLocation: string; readonly remotePreference: string; }
@@ -311,7 +311,7 @@ export function OptionsApp(): preact.JSX.Element {
   },[updateP]);
 
   return(
-    <div style={{fontFamily:t.fontFamily,fontSize:'15px',maxWidth:'860px',margin:'0 auto',padding:'30px 24px',color:c.textPrimary}}>
+    <div style={{fontFamily:t.fontFamily,fontSize:'15px',maxWidth:'860px',margin:'0 auto',padding:'30px 24px',color:c.textPrimary,backgroundColor:'#1A1512'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px'}}>
         <h1 style={{margin:0,fontSize:'24px',fontWeight:800,color:c.primary,letterSpacing:'-0.02em'}}>⚙️ Settings</h1>
         <span style={{fontSize:'14px',fontWeight:600,color:saveStatus.startsWith('✓')?c.green:c.textMuted}}>{saveStatus}</span>
@@ -337,10 +337,10 @@ export function OptionsApp(): preact.JSX.Element {
       {/* Prompt Templates — collapsible */}
       <div style={{...sectionTitle,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center'}} onClick={()=>setShowPrompts(!showPrompts)}>
         <span>📝 Prompt Templates</span>
-        <span style={{fontSize:'11px',fontWeight:400,color:'#999'}}>{showPrompts?'🔽':'▶'} Customize</span>
+        <span style={{fontSize:'11px',fontWeight:400,color:c.textMuted}}>{showPrompts?'🔽':'▶'} Customize</span>
       </div>
       {showPrompts&&<div>
-        <p style={{fontSize:'11px',color:'#666',margin:'0 0 12px',lineHeight:1.5}}>
+        <p style={{fontSize:'11px',color:c.textSecondary,margin:'0 0 12px',lineHeight:1.5}}>
           Base prompts are locked to keep the JSON output structure stable. You can add short guidance per template (tone, emphasis, length, things to avoid). The runner injects your text into a fixed <code style={{backgroundColor:c.primaryBg,color:c.primaryFg,padding:'0 4px',borderRadius:'3px',fontSize:'11px'}}>User Custom Instructions</code> slot before the data section.
         </p>
         {PROMPT_SLOTS.map(slot=>{
@@ -357,7 +357,7 @@ export function OptionsApp(): preact.JSX.Element {
               <div style={{marginTop:'8px'}}>
                 <label style={{...fieldLabel,fontSize:'11px',display:'flex',justifyContent:'space-between'}}>
                   <span>Custom instructions <span style={slotTag}>(appended only)</span></span>
-                  <span style={{fontSize:'10px',fontWeight:400,color:'#999'}}>{addValue.length}/2000</span>
+                  <span style={{fontSize:'10px',fontWeight:400,color:c.textMuted}}>{addValue.length}/2000</span>
                 </label>
                 <textarea value={addValue} onInput={e=>{const v=(e.target as HTMLTextAreaElement).value;if(v.length<=2000)updateLlm(slot.key,v)}} placeholder={`Optional. Example: "Keep the summary under 80 words and avoid the word 'passionate'."`} style={customArea}/>
               </div>
