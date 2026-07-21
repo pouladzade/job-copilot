@@ -4,6 +4,16 @@ A browser extension that scrapes any job posting, tailors your application with 
 
 **No backend. No database. No Docker.** Everything runs in your browser. Your API key, resume, and profile stay in Chrome's local storage.
 
+## Screenshots
+
+| Popup | Options |
+|-------|---------|
+| ![Popup](docs/images/1.png) | ![Options - LLM + Resume](docs/images/5.png) |
+
+| Scrape & Tailor | Quick Match | Fill Form | Message Reply |
+|-----------------|-------------|-----------|---------------|
+| ![Summary](docs/images/2.png) | ![Quick Match](docs/images/3.png) | ![Fill Form](docs/images/4.png) | ![Reply](docs/images/6.png) |
+
 ## What it does
 
 - **🔍 Scrape & Tailor** — extract job details from any job board (Greenhouse, LinkedIn, Lever, Ashby, Personio, company career pages, etc.) and generate a tailored application
