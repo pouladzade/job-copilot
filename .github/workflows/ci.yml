@@ -31,7 +31,7 @@ jobs:
         run: pnpm run build
 
       - name: Test
-        run: pnpm run test -- --coverage
+        run: pnpm run test:ci
 
       - name: Verify extension output
         run: test -d dist && test -f dist/manifest.json
