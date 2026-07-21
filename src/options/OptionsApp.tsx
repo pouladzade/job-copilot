@@ -251,6 +251,8 @@ export function OptionsApp(): preact.JSX.Element {
   const [importStatus,setImportStatus]=useState('');
   const [showPrompts,setShowPrompts]=useState(false);
   const [expandedSlot,setExpandedSlot]=useState<keyof LlmConfig | null>(null);
+  const [parseStatus,setParseStatus]=useState<'idle'|'parsing'|'success'|'error'>('idle');
+  const [parseError,setParseError]=useState('');
 
   useEffect(()=>{
     chrome.storage.local.get(['profile','llmConfig'],(r)=>{
@@ -292,6 +294,22 @@ export function OptionsApp(): preact.JSX.Element {
     setImportStatus(`✓ Imported ${count} fields`);setImportJson('');setTimeout(()=>setImportStatus(''),2500);
   },[importJson,updateP]);
 
+  const doParseResume=useCallback(()=>{
+    setParseStatus('parsing');setParseError('');
+    chrome.runtime.sendMessage({type:'backend:parseResume'},(r:{success:boolean;data?:{profile:Partial<ProfileData>;tokenUsage:{totalTokens:number;estimatedCostUsd:number}};error?:string})=>{
+      if(!r.success||!r.data){setParseStatus('error');setParseError(r.error??'Parsing failed');return}
+      const pp=r.data.profile;
+      for(const f of PROFILE_FIELDS){
+        const val=pp[f.key];
+        if(val===undefined||val===null||val==='')continue;
+        if(f.type==='number'&&typeof val==='number')updateP(f.key,val);
+        else if(typeof val==='string')updateP(f.key,val);
+      }
+      setParseStatus('success');
+      setTimeout(()=>{setParseStatus('idle');setParseError('')},4000);
+    });
+  },[updateP]);
+
   return(
     <div style={{fontFamily:t.fontFamily,fontSize:'15px',maxWidth:'860px',margin:'0 auto',padding:'30px 24px',color:c.textPrimary}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px'}}>
@@ -308,6 +326,13 @@ export function OptionsApp(): preact.JSX.Element {
       {/* Resume */}
       <div style={sectionTitle}>📄 Resume (Markdown)</div>
       <textarea value={llm.resume} onInput={e=>updateLlm('resume',(e.target as HTMLTextAreaElement).value)} placeholder="Paste your full resume in markdown here..." style={{width:'100%',height:'150px',padding:'10px 12px',fontSize:'12px',border:`1px solid ${c.surfaceBorder}`,borderRadius:t.radiusSm,resize:'vertical',fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box',outline:'none',color:c.textPrimary,backgroundColor:c.surface}}/>
+      <div style={{marginTop:'8px',display:'flex',gap:'8px',alignItems:'center'}}>
+        <button onClick={doParseResume} disabled={parseStatus==='parsing'} style={{padding:'6px 14px',fontSize:'12px',fontWeight:600,backgroundColor:parseStatus==='parsing'?c.primaryLight:c.primary,color:c.textWhite,border:'none',borderRadius:t.radiusSm,cursor:parseStatus==='parsing'?'not-allowed':'pointer',transition:'all 150ms'}}>
+          {parseStatus==='parsing'?'Parsing resume...':'Auto-fill Profile'}
+        </button>
+        {parseStatus==='error'&&<span style={{fontSize:'12px',color:c.destructive}}>{parseError}</span>}
+        {parseStatus==='success'&&<span style={{fontSize:'12px',color:c.green,fontWeight:600}}>Profile filled</span>}
+      </div>
 
       {/* Prompt Templates — collapsible */}
       <div style={{...sectionTitle,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center'}} onClick={()=>setShowPrompts(!showPrompts)}>

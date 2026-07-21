@@ -530,6 +530,41 @@ async function handleReply(pageText:string,replyPrompt:string,sendResponse:(r:un
   }catch(e:unknown){sendResponse({success:false,error:e instanceof Error?e.message:'Reply generation failed'})}
 }
 
+
+async function handleParseResume(sendResponse:(r:unknown)=>void):Promise<void>{
+  const cfg=await getLlmConfig();
+  if(!isLocalUrl(cfg.apiUrl)&&cfg.apiKey===''){sendResponse({success:false,error:'API key not configured.'});return}
+  if(cfg.resume===''){sendResponse({success:false,error:'Resume not configured. Paste your resume first.'});return}
+  const profileFields=['fullName','contactEmail','contactPhone','city','state','linkedin','portfolioUrl','githubUrl','workAuthorization','salaryExpectations','noticePeriod','willingToRelocate','yearsOfExperience','currentTitle','currentCompany','highestDegree','university','fieldOfStudy','desiredRole','preferredLocation','remotePreference'];
+  try{
+    const prompt=`## System
+You are a resume parser. Extract structured profile fields from the candidate's resume. Return ONLY valid JSON.
+
+## Rules
+1. Use the EXACT keys in the schema. Do not add or rename fields.
+2. Infer values from the resume text where possible. If a field cannot be determined, set it to "".
+3. "yearsOfExperience" must be a number. Count from the earliest job or education date mentioned. If unclear, set to 0.
+4. "willingToRelocate" should be "Yes", "No", or "Open" based on any relocation mentions.
+5. "remotePreference" should be "Remote", "Hybrid", or "On-site" based on any remote work mentions.
+6. "workAuthorization" should reflect any visa/citizenship mentions. If not found, set to "".
+7. NEVER invent facts not present in the resume.
+
+## Schema
+{"fullName":"string","contactEmail":"string","contactPhone":"string","city":"string","state":"string","linkedin":"string","portfolioUrl":"string","githubUrl":"string","workAuthorization":"string","salaryExpectations":"string","noticePeriod":"string","willingToRelocate":"string","yearsOfExperience":0,"currentTitle":"string","currentCompany":"string","highestDegree":"string","university":"string","fieldOfStudy":"string","desiredRole":"string","preferredLocation":"string","remotePreference":"string"}
+
+## Resume
+${cfg.resume.slice(0, 8000)}`;
+    const r=await callLlm(prompt);
+    const profile:Record<string,unknown>={};
+    for(const f of profileFields){
+      const val=r.data[f];
+      if(f==='yearsOfExperience'){profile[f]=typeof val==='number'?val:typeof val==='string'?parseInt(val,10)||0:0}
+      else{profile[f]=typeof val==='string'?val:''}
+    }
+    sendResponse({success:true,data:{profile,tokenUsage:r.usage}});
+  }catch(e:unknown){sendResponse({success:false,error:e instanceof Error?e.message:'Resume parsing failed'})}
+}
+
 // ── Router ────────────────────────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener((msg:Record<string,unknown>,_sender:unknown,sendResponse:(r:unknown)=>void):boolean=>{
@@ -538,6 +573,7 @@ chrome.runtime.onMessage.addListener((msg:Record<string,unknown>,_sender:unknown
   if(msg['type']==='backend:quickMatch'){handleQuickMatch((msg['payload']as Record<string,unknown>)?.['pageText']as string??'',sendResponse);return true}
   if(msg['type']==='backend:matchFormFields'){handleFormMatch(msg['payload']as Parameters<typeof handleFormMatch>[0],sendResponse);return true}
   if(msg['type']==='backend:reply'){handleReply((msg['payload']as Record<string,unknown>)?.['pageText']as string??'',(msg['payload']as Record<string,unknown>)?.['replyPrompt']as string??'',sendResponse);return true}
+  if(msg['type']==='backend:parseResume'){handleParseResume(sendResponse);return true}
   if(msg['type']==='scrape'){relayToActiveTab({type:'scrape',kind:msg['kind'],quickMatch:msg['quickMatch'],reply:msg['reply'],replyPrompt:msg['replyPrompt']},sendResponse);return true}
   if(msg['type']==='scrapeFormFields'){relayToActiveTab({type:'scrapeFormFields'},sendResponse);return true}
   if(msg['type']==='fillForm'){relayToActiveTab({type:'fillForm',answers:msg['answers']},sendResponse);return true}
