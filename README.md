@@ -24,7 +24,7 @@ pnpm build
 2. Load in Chrome:
    - Go to `chrome://extensions`
    - Enable "Developer mode"
-   - Click "Load unpacked" → select `packages/extension/dist`
+   - Click "Load unpacked" → select `dist`
 
 3. Configure:
    - Right-click the extension icon → **Options**
@@ -89,7 +89,7 @@ Content Script — injects into web pages, scrapes text & forms
 - Vite (build)
 - Jest + jsdom (tests — 26 integration tests)
 - Manifest V3 (Chrome extension)
-- pnpm (monorepo)
+- pnpm
 
 ## License
 
