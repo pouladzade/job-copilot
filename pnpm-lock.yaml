@@ -6,9 +6,7 @@ settings:
 
 importers:
 
-  .: {}
-
-  packages/extension:
+  .:
     dependencies:
       '@mozilla/readability':
         specifier: ^0.6.0
