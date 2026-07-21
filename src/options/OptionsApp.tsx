@@ -311,7 +311,7 @@ export function OptionsApp(): preact.JSX.Element {
   },[updateP]);
 
   return(
-    <div style={{fontFamily:t.fontFamily,fontSize:'15px',maxWidth:'860px',margin:'0 auto',padding:'30px 24px',color:c.textPrimary,backgroundColor:'#1A1512'}}>
+    <div style={{fontFamily:t.fontFamily,fontSize:'15px',maxWidth:'860px',margin:'0 auto',padding:'30px 24px',color:c.textPrimary,backgroundColor:'#1E1E1E'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px'}}>
         <h1 style={{margin:0,fontSize:'24px',fontWeight:800,color:c.primary,letterSpacing:'-0.02em'}}>⚙️ Settings</h1>
         <span style={{fontSize:'14px',fontWeight:600,color:saveStatus.startsWith('✓')?c.green:c.textMuted}}>{saveStatus}</span>

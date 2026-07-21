@@ -5,30 +5,30 @@ import type { JSX } from 'preact';
 
 // ── Design Tokens ────────────────────────────────────────────────────
 const colors = {
-  primary: '#EA580C',
-  primaryLight: '#F97316',
-  primaryBg: 'rgba(234,88,12,0.12)',
-  primaryBorder: 'rgba(234,88,12,0.25)',
-  primaryFg: '#F5F0EB',
-  accent: '#F59E0B',
-  accentHover: '#FBBF24',
-  purple: '#A855F7',
-  purpleBg: 'rgba(168,85,247,0.12)',
-  purpleBorder: 'rgba(168,85,247,0.25)',
-  green: '#22C55E',
-  greenBg: 'rgba(34,197,94,0.12)',
-  greenBorder: 'rgba(34,197,94,0.25)',
-  orange: '#F59E0B',
-  orangeBg: 'rgba(245,158,11,0.12)',
-  destructive: '#EF4444',
-  destructiveBg: 'rgba(239,68,68,0.12)',
-  destructiveBorder: 'rgba(239,68,68,0.25)',
-  surface: '#24201C',
-  surfaceHover: '#2D2824',
-  surfaceBorder: 'rgba(234,88,12,0.12)',
-  textPrimary: '#F5F0EB',
-  textSecondary: '#A8998B',
-  textMuted: '#6B5D53',
+  primary: '#007ACC',
+  primaryLight: '#1A8CD9',
+  primaryBg: 'rgba(0,122,204,0.15)',
+  primaryBorder: 'rgba(0,122,204,0.3)',
+  primaryFg: '#D4D4D4',
+  accent: '#007ACC',
+  accentHover: '#1A8CD9',
+  purple: '#5C6BC0',
+  purpleBg: 'rgba(92,107,192,0.15)',
+  purpleBorder: 'rgba(92,107,192,0.3)',
+  green: '#40A860',
+  greenBg: 'rgba(64,168,96,0.15)',
+  greenBorder: 'rgba(64,168,96,0.3)',
+  orange: '#D4A017',
+  orangeBg: 'rgba(212,160,23,0.15)',
+  destructive: '#D65757',
+  destructiveBg: 'rgba(214,87,87,0.15)',
+  destructiveBorder: 'rgba(214,87,87,0.3)',
+  surface: '#2D2D2D',
+  surfaceHover: '#333333',
+  surfaceBorder: 'rgba(255,255,255,0.08)',
+  textPrimary: '#D4D4D4',
+  textSecondary: '#9D9D9D',
+  textMuted: '#6A6A6A',
   textWhite: '#FFFFFF',
 } as const;
 
@@ -132,7 +132,7 @@ function Container(p: { readonly children: preact.ComponentChildren }): JSX.Elem
         fontSize: '13px',
         lineHeight: 1.5,
         color: colors.textPrimary,
-        backgroundColor: '#1A1512',
+        backgroundColor: '#1E1E1E',
         overflow: 'hidden',
       }}
     >
@@ -212,7 +212,7 @@ function ErrorPanel(p: {
             Error
           </span>
         </div>
-        <p style={{ margin: 0, color: '#FCA5A5', fontSize: '12px' }}>{p.state.message}</p>
+        <p style={{ margin: 0, color: '#F48771', fontSize: '12px' }}>{p.state.message}</p>
         {p.state.details && (
           <pre
             style={{
