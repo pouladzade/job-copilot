@@ -2,6 +2,8 @@ import { render } from 'preact';
 import { useCallback, useEffect, useState } from 'preact/hooks';
 
 import type { JSX } from 'preact';
+import { buildLinkedInSearchUrl } from '../utils/linkedin-search-builder';
+import type { LinkedInSearchConfig } from '../utils/linkedin-search-builder';
 
 // ── Design Tokens ────────────────────────────────────────────────────
 const colors = {
@@ -594,6 +596,101 @@ export function App(): JSX.Element {
 
 // ── Idle Panel ────────────────────────────────────────────────────────
 
+interface Preset {
+  readonly name: string;
+  readonly config: LinkedInSearchConfig;
+}
+
+function LinkedInSearchBar(): JSX.Element {
+  const [presets, setPresets] = useState<ReadonlyArray<Preset>>([]);
+  const [selected, setSelected] = useState('');
+
+  useEffect(() => {
+    chrome.storage.local.get(['linkedInSearchPresets'], (result) => {
+      const stored = result['linkedInSearchPresets'] as unknown;
+      if (Array.isArray(stored)) {
+        const typed: Preset[] = stored.filter(
+          (p): p is Preset =>
+            typeof p === 'object' &&
+            p !== null &&
+            typeof (p as Preset).name === 'string' &&
+            typeof (p as Preset).config === 'object',
+        );
+        setPresets(typed);
+        if (typed.length > 0 && selected === '') {
+          setSelected(typed[0]?.name ?? '');
+        }
+      }
+    });
+  }, []);
+
+  const handleSearch = useCallback(() => {
+    const preset = presets.find((p) => p.name === selected);
+    if (preset === undefined) return;
+
+    const url = buildLinkedInSearchUrl(preset.config);
+    chrome.tabs.create({ url });
+  }, [selected, presets]);
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        gap: '6px',
+        alignItems: 'center',
+        marginBottom: '10px',
+        padding: '8px 10px',
+        backgroundColor: colors.surface,
+        borderRadius: tokens.radiusSm,
+        border: `1px solid ${colors.surfaceBorder}`,
+      }}
+    >
+      <select
+        value={selected}
+        onChange={(e) => setSelected((e.target as HTMLSelectElement).value)}
+        style={{
+          flex: 1,
+          padding: '6px 8px',
+          fontSize: '12px',
+          border: `1px solid ${colors.surfaceBorder}`,
+          borderRadius: tokens.radiusSm,
+          backgroundColor: '#FFFFFF',
+          color: colors.textPrimary,
+          fontFamily: tokens.fontFamily,
+          outline: 'none',
+          minWidth: 0,
+        }}
+      >
+        {presets.length === 0 && <option value="">No saved presets</option>}
+        {presets.map((p) => (
+          <option key={p.name} value={p.name}>
+            {p.name}
+          </option>
+        ))}
+      </select>
+      <button
+        onClick={handleSearch}
+        disabled={selected === ''}
+        style={{
+          padding: '6px 12px',
+          fontSize: '12px',
+          fontWeight: 600,
+          backgroundColor: selected === '' ? colors.surfaceHover : colors.primary,
+          color: selected === '' ? colors.textMuted : colors.textWhite,
+          border: 'none',
+          borderRadius: tokens.radiusSm,
+          cursor: selected === '' ? 'not-allowed' : 'pointer',
+          whiteSpace: 'nowrap',
+          transition: 'all 150ms',
+        }}
+        title="Search LinkedIn with saved preset"
+      >
+        🔍 Search LinkedIn
+      </button>
+    </div>
+  );
+}
+
 function IdlePanel(p: {
   readonly replyPrompt: string;
   readonly onReplyChange: (v: string) => void;
@@ -619,6 +716,7 @@ function IdlePanel(p: {
 
   return (
     <div>
+      <LinkedInSearchBar />
       <p style={{ fontSize: '11px', color: colors.textMuted, margin: '0 0 10px' }}>
         Open a job posting, then choose an action:
       </p>

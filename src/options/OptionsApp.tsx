@@ -1,9 +1,8 @@
 import { render } from 'preact';
 import { useCallback, useEffect, useState } from 'preact/hooks';
-import type { JSX } from "preact";
-
-const c = { primary:'#007ACC',primaryLight:'#1A8CD9',primaryBg:'rgba(0,122,204,0.08)',primaryBorder:'rgba(0,122,204,0.2)',primaryFg:'#1E1E1E',accent:'#007ACC',purple:'#5C6BC0',purpleBg:'rgba(92,107,192,0.08)',purpleBorder:'rgba(92,107,192,0.2)',green:'#40A860',greenBg:'rgba(64,168,96,0.08)',greenBorder:'rgba(64,168,96,0.2)',destructive:'#D65757',destructiveBg:'rgba(214,87,87,0.08)',destructiveBorder:'rgba(214,87,87,0.2)',surface:'#F3F3F3',surfaceHover:'#E8E8E8',surfaceBorder:'rgba(0,0,0,0.08)',textPrimary:'#1E1E1E',textSecondary:'#616161',textMuted:'#8E8E90',textWhite:'#FFFFFF', } as const;
-const t = { radiusSm:'6px',radiusMd:'8px',radiusLg:'12px',shadowSm:'0 1px 2px rgba(0,0,0,0.06)',fontFamily:'"Inter",system-ui,-apple-system,sans-serif', } as const;
+import type { JSX } from 'preact';
+import { LinkedInSearch } from './LinkedInSearch';
+import { colors, radii, shadows, fontFamily, inputStyle, btnPrimary, fieldLabel, sectionTitle, btnSecondary, tabBar, tabBtn } from '../theme';
 
 interface ProfileData { readonly fullName: string; readonly contactEmail: string; readonly contactPhone: string; readonly city: string; readonly state: string; readonly linkedin: string; readonly portfolioUrl: string; readonly githubUrl: string; readonly workAuthorization: string; readonly salaryExpectations: string; readonly noticePeriod: string; readonly willingToRelocate: string; readonly yearsOfExperience: number; readonly currentTitle: string; readonly currentCompany: string; readonly highestDegree: string; readonly university: string; readonly fieldOfStudy: string; readonly desiredRole: string; readonly preferredLocation: string; readonly remotePreference: string; }
 interface LlmConfig { readonly apiUrl: string; readonly apiKey: string; readonly model: string; readonly resume: string; readonly prmExtractAdd: string; readonly prmTailorAdd: string; readonly prmCoverAdd: string; readonly prmScreeningAdd: string; readonly prmQuickAdd: string; readonly prmFormAdd: string; }
@@ -232,27 +231,24 @@ const PROFILE_FIELDS: ReadonlyArray<{key:keyof ProfileData;label:string;type:str
   {key:'remotePreference',label:'Remote Preference',type:'text',placeholder:'Remote / Hybrid / On-site'},
 ];
 
-const inputS={width:'100%',padding:'10px 12px',fontSize:'14px',border:`1px solid ${c.surfaceBorder}`,borderRadius:t.radiusSm,boxSizing:'border-box'as const,fontFamily:t.fontFamily,outline:'none',transition:'border-color 150ms',backgroundColor:c.surface,color:c.textPrimary} as const;
-const fieldLabel={fontSize:'13px',fontWeight:600,color:c.textSecondary,marginBottom:'4px',display:'block'};
-const sectionTitle={fontSize:'16px',fontWeight:700,color:c.textPrimary,marginBottom:'14px',marginTop:'28px',borderBottom:`1px solid ${c.surfaceBorder}`,paddingBottom:'10px'};
-const promptReadonly={width:'100%',padding:'10px 12px',fontSize:'11px',border:`1px solid ${c.surfaceBorder}`,borderRadius:t.radiusSm,backgroundColor:c.surfaceHover,color:c.textSecondary,fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box'as const,lineHeight:1.5,whiteSpace:'pre-wrap'as const,overflowY:'auto'as const,maxHeight:'220px'};
-const customArea={width:'100%',height:'80px',padding:'8px 10px',fontSize:'12px',border:`1px solid ${c.primaryBorder}`,borderRadius:t.radiusSm,backgroundColor:c.primaryBg,resize:'vertical',fontFamily:t.fontFamily,boxSizing:'border-box'as const,lineHeight:1.4,outline:'none',color:c.textPrimary};
-const slotCard={padding:'14px',border:`1px solid ${c.surfaceBorder}`,borderRadius:t.radiusMd,marginBottom:'14px',backgroundColor:c.surface};
+const promptReadonly={width:'100%',padding:'10px 12px',fontSize:'11px',border:`1px solid ${colors.surfaceBorder}`,borderRadius:radii.sm,backgroundColor:colors.surfaceHover,color:colors.textSecondary,fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box'as const,lineHeight:1.5,whiteSpace:'pre-wrap'as const,overflowY:'auto'as const,maxHeight:'220px'};
+const customArea={width:'100%',height:'80px',padding:'8px 10px',fontSize:'12px',border:`1px solid ${colors.primaryBorder}`,borderRadius:radii.sm,backgroundColor:colors.primaryBg,resize:'vertical',fontFamily,boxSizing:'border-box'as const,lineHeight:1.4,outline:'none',color:colors.textPrimary};
+const slotCard={padding:'14px',border:`1px solid ${colors.surfaceBorder}`,borderRadius:radii.md,marginBottom:'14px',backgroundColor:colors.surface};
 const slotHeader={display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:'4px'};
-const slotTitle={fontSize:'13px',fontWeight:700,color:c.primary};
-const slotDesc={fontSize:'11px',color:c.textMuted,marginBottom:'10px'};
-const slotTag={fontSize:'10px',fontWeight:600,color:c.textMuted,textTransform:'uppercase'as const,letterSpacing:'0.04em'};
+const slotTitle={fontSize:'13px',fontWeight:700,color:colors.primary};
+const slotDesc={fontSize:'11px',color:colors.textMuted,marginBottom:'10px'};
+const slotTag={fontSize:'10px',fontWeight:600,color:colors.textMuted,textTransform:'uppercase'as const,letterSpacing:'0.04em'};
+
+type SettingsTab = 'llm' | 'profile' | 'prompts';
 
 export function OptionsApp(): preact.JSX.Element {
   const [profile,setProfile]=useState(PROFILE_DEFAULTS);
   const [llm,setLlm]=useState(LLM_DEFAULTS);
   const [saveStatus,setSaveStatus]=useState('');
-  const [importJson,setImportJson]=useState('');
-  const [importStatus,setImportStatus]=useState('');
-  const [showPrompts,setShowPrompts]=useState(false);
   const [expandedSlot,setExpandedSlot]=useState<keyof LlmConfig | null>(null);
   const [parseStatus,setParseStatus]=useState<'idle'|'parsing'|'success'|'error'>('idle');
   const [parseError,setParseError]=useState('');
+  const [settingsTab,setSettingsTab]=useState<SettingsTab>('llm');
 
   useEffect(()=>{
     chrome.storage.local.get(['profile','llmConfig'],(r)=>{
@@ -260,10 +256,6 @@ export function OptionsApp(): preact.JSX.Element {
       if(s['profile']&&typeof s['profile']==='object'&&s['profile']!==null)setProfile({...PROFILE_DEFAULTS,...(s['profile']as Partial<ProfileData>)});
       if(s['llmConfig']&&typeof s['llmConfig']==='object'&&s['llmConfig']!==null){
         const stored=s['llmConfig']as Record<string,unknown>;
-        // Legacy storage may still carry the old editable `prm*` fields. We
-        // strip them on load and persist the cleaned config so the old keys
-        // are gone from storage. The base prompts are now code-owned, and
-        // the user's only editable channel is `prm*Add` custom instructions.
         const LEGACY_KEYS=['prmExtract','prmTailor','prmCover','prmScreening','prmQuick','prmForm'] as const;
         const cleaned:Record<string,unknown>={...LLM_DEFAULTS,...stored};
         let stripped=false;
@@ -279,20 +271,17 @@ export function OptionsApp(): preact.JSX.Element {
   const updateLlm=useCallback((k:keyof LlmConfig,v:string)=>setLlm(l=>({...l,[k]:v})),[]);
   const doSave=useCallback(()=>{
     setSaving(true);
+    const start=Date.now();
     chrome.storage.local.set({profile,llmConfig:llm},()=>{
-      setSaving(false);
-      setSaveStatus('✓ Saved');
-      setTimeout(()=>setSaveStatus(''),3000);
+      const elapsed=Date.now()-start;
+      const remaining=Math.max(0,600-elapsed);
+      setTimeout(()=>{
+        setSaving(false);
+        setSaveStatus('✓ Saved');
+        setTimeout(()=>setSaveStatus(''),2500);
+      },remaining);
     });
   },[profile,llm]);
-
-  const doImport=useCallback(()=>{
-    if(importJson.trim()==='')return;let parsed:unknown;try{parsed=JSON.parse(importJson)}catch{setImportStatus('Invalid JSON');return}
-    if(typeof parsed!=='object'||parsed===null){setImportStatus('Must be a JSON object');return}
-    const obj=parsed as Record<string,unknown>;let count=0;
-    for(const f of PROFILE_FIELDS){const val=obj[f.key];if(val!==undefined){if(f.type==='number'&&typeof val==='number'){updateP(f.key,val);count++}else if(f.type!=='number'&&typeof val==='string'){updateP(f.key,val as string);count++}}}
-    setImportStatus(`✓ Imported ${count} fields`);setImportJson('');setTimeout(()=>setImportStatus(''),2500);
-  },[importJson,updateP]);
 
   const doParseResume=useCallback(()=>{
     setParseStatus('parsing');setParseError('');
@@ -311,37 +300,48 @@ export function OptionsApp(): preact.JSX.Element {
   },[updateP]);
 
   return(
-    <div style={{fontFamily:t.fontFamily,fontSize:'15px',maxWidth:'860px',margin:'0 auto',padding:'30px 24px',color:c.textPrimary,backgroundColor:'#FFFFFF'}}>
+    <div style={{fontFamily:fontFamily,fontSize:'15px',maxWidth:'860px',margin:'0 auto',padding:'30px 24px',color:colors.textPrimary,backgroundColor:'#FFFFFF'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px'}}>
-        <h1 style={{margin:0,fontSize:'24px',fontWeight:800,color:c.primary,letterSpacing:'-0.02em'}}>⚙️ Settings</h1>
-        <span style={{fontSize:'14px',fontWeight:600,color:saveStatus.startsWith('✓')?c.green:c.textMuted}}>{saveStatus}</span>
+        <h1 style={{margin:0,fontSize:'24px',fontWeight:800,color:colors.primary,letterSpacing:'-0.02em'}}>⚙️ Settings</h1>
+        <span style={{fontSize:'14px',fontWeight:600,color:saveStatus.startsWith('✓')?colors.green:colors.textMuted}}>{saveStatus}</span>
       </div>
 
-      {/* LLM Config */}
-      <div style={sectionTitle}>🤖 LLM Provider</div>
-      <div style={{marginBottom:'12px'}}><label style={fieldLabel}>API URL</label><input type="text" value={llm.apiUrl} onInput={e=>updateLlm('apiUrl',(e.target as HTMLInputElement).value)} placeholder="https://api.deepseek.com/v1" style={inputS}/></div>
-      <div style={{marginBottom:'12px'}}><label style={fieldLabel}>API Key</label><input type="password" value={llm.apiKey} onInput={e=>updateLlm('apiKey',(e.target as HTMLInputElement).value)} placeholder="sk-..." style={inputS}/></div>
-      <div style={{marginBottom:'12px'}}><label style={fieldLabel}>Model</label><input type="text" value={llm.model} onInput={e=>updateLlm('model',(e.target as HTMLInputElement).value)} placeholder="deepseek-chat" style={inputS}/></div>
-
-      {/* Resume */}
-      <div style={sectionTitle}>📄 Resume (Markdown)</div>
-      <textarea value={llm.resume} onInput={e=>updateLlm('resume',(e.target as HTMLTextAreaElement).value)} placeholder="Paste your full resume in markdown here..." style={{width:'100%',height:'150px',padding:'10px 12px',fontSize:'12px',border:`1px solid ${c.surfaceBorder}`,borderRadius:t.radiusSm,resize:'vertical',fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box',outline:'none',color:c.textPrimary,backgroundColor:c.surface}}/>
-      <div style={{marginTop:'8px',display:'flex',gap:'8px',alignItems:'center'}}>
-        <button onClick={doParseResume} disabled={parseStatus==='parsing'} style={{padding:'6px 14px',fontSize:'12px',fontWeight:600,backgroundColor:parseStatus==='parsing'?c.primaryLight:c.primary,color:c.textWhite,border:'none',borderRadius:t.radiusSm,cursor:parseStatus==='parsing'?'not-allowed':'pointer',transition:'all 150ms'}}>
-          {parseStatus==='parsing'?'Parsing resume...':'Auto-fill Profile'}
-        </button>
-        {parseStatus==='error'&&<span style={{fontSize:'12px',color:c.destructive}}>{parseError}</span>}
-        {parseStatus==='success'&&<span style={{fontSize:'12px',color:c.green,fontWeight:600}}>Profile filled</span>}
+      {/* ── Settings Tabs ── */}
+      <div style={tabBar}>
+        <button onClick={()=>setSettingsTab('llm')} style={tabBtn(settingsTab==='llm')}>🤖 LLM Provider</button>
+        <button onClick={()=>setSettingsTab('profile')} style={tabBtn(settingsTab==='profile')}>📄 Resume & Profile</button>
+        <button onClick={()=>setSettingsTab('prompts')} style={tabBtn(settingsTab==='prompts')}>📝 Prompts</button>
       </div>
 
-      {/* Prompt Templates — collapsible */}
-      <div style={{...sectionTitle,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center'}} onClick={()=>setShowPrompts(!showPrompts)}>
-        <span>📝 Prompt Templates</span>
-        <span style={{fontSize:'11px',fontWeight:400,color:c.textMuted}}>{showPrompts?'🔽':'▶'} Customize</span>
-      </div>
-      {showPrompts&&<div>
-        <p style={{fontSize:'11px',color:c.textSecondary,margin:'0 0 12px',lineHeight:1.5}}>
-          Base prompts are locked to keep the JSON output structure stable. You can add short guidance per template (tone, emphasis, length, things to avoid). The runner injects your text into a fixed <code style={{backgroundColor:c.primaryBg,color:c.primaryFg,padding:'0 4px',borderRadius:'3px',fontSize:'11px'}}>User Custom Instructions</code> slot before the data section.
+      {/* ── Tab: LLM Provider ── */}
+      {settingsTab==='llm'&&<div>
+        <div style={{marginBottom:'12px'}}><label style={fieldLabel}>API URL</label><input type="text" value={llm.apiUrl} onInput={e=>updateLlm('apiUrl',(e.target as HTMLInputElement).value)} placeholder="https://api.deepseek.com/v1" style={inputStyle}/></div>
+        <div style={{marginBottom:'12px'}}><label style={fieldLabel}>API Key</label><input type="password" value={llm.apiKey} onInput={e=>updateLlm('apiKey',(e.target as HTMLInputElement).value)} placeholder="sk-..." style={inputStyle}/></div>
+        <div style={{marginBottom:'12px'}}><label style={fieldLabel}>Model</label><input type="text" value={llm.model} onInput={e=>updateLlm('model',(e.target as HTMLInputElement).value)} placeholder="deepseek-chat" style={inputStyle}/></div>
+      </div>}
+
+      {/* ── Tab: Resume & Profile ── */}
+      {settingsTab==='profile'&&<div>
+        <div style={sectionTitle}>📄 Resume (Markdown)</div>
+        <textarea value={llm.resume} onInput={e=>updateLlm('resume',(e.target as HTMLTextAreaElement).value)} placeholder="Paste your full resume in markdown here..." style={{width:'100%',height:'150px',padding:'10px 12px',fontSize:'12px',border:`1px solid ${colors.surfaceBorder}`,borderRadius:radii.sm,resize:'vertical',fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box',outline:'none',color:colors.textPrimary,backgroundColor:colors.surface}}/>
+        <div style={{marginTop:'8px',display:'flex',gap:'8px',alignItems:'center',marginBottom:'20px'}}>
+          <button onClick={doParseResume} disabled={parseStatus==='parsing'} style={{padding:'6px 14px',fontSize:'12px',fontWeight:600,backgroundColor:parseStatus==='parsing'?colors.primaryLight:colors.primary,color:colors.textWhite,border:'none',borderRadius:radii.sm,cursor:parseStatus==='parsing'?'not-allowed':'pointer',transition:'all 150ms'}}>
+            {parseStatus==='parsing'?'Parsing resume...':'Auto-fill Profile'}
+          </button>
+          {parseStatus==='error'&&<span style={{fontSize:'12px',color:colors.destructive}}>{parseError}</span>}
+          {parseStatus==='success'&&<span style={{fontSize:'12px',color:colors.green,fontWeight:600}}>Profile filled</span>}
+        </div>
+
+        <div style={sectionTitle}>👤 Profile Fields</div>
+        <div style={{maxHeight:'none'}}>
+          {PROFILE_FIELDS.map(f=>(<div key={f.key} style={{marginBottom:'10px'}}><label style={fieldLabel}>{f.label}</label><input type={f.type} value={profile[f.key]} onInput={e=>{const v=(e.target as HTMLInputElement).value;updateP(f.key,f.type==='number'?(v===''?0:parseInt(v,10)||0):v)}} placeholder={f.placeholder} style={inputStyle}/></div>))}
+        </div>
+      </div>}
+
+      {/* ── Tab: Prompts ── */}
+      {settingsTab==='prompts'&&<div>
+        <p style={{fontSize:'11px',color:colors.textSecondary,margin:'0 0 12px',lineHeight:1.5}}>
+          Base prompts are locked to keep the JSON output structure stable. You can add short guidance per template (tone, emphasis, length, things to avoid). The runner injects your text into a fixed <code style={{backgroundColor:colors.primaryBg,color:colors.primaryFg,padding:'0 4px',borderRadius:'3px',fontSize:'11px'}}>User Custom Instructions</code> slot before the data section.
         </p>
         {PROMPT_SLOTS.map(slot=>{
           const isOpen=expandedSlot===slot.key;
@@ -350,14 +350,14 @@ export function OptionsApp(): preact.JSX.Element {
             <div key={slot.key} style={slotCard}>
               <div style={slotHeader}>
                 <span style={slotTitle}>{slot.label}</span>
-                <button onClick={()=>setExpandedSlot(isOpen?null:slot.key)} style={{padding:'2px 10px',fontSize:'11px',fontWeight:600,backgroundColor:isOpen?c.primary:c.surface,color:isOpen?c.textWhite:c.primary,border:`1px solid ${c.primary}`,borderRadius:t.radiusSm,transition:'all 150ms',cursor:'pointer'}}>{isOpen?'Hide base prompt':'View base prompt'}</button>
+                <button onClick={()=>setExpandedSlot(isOpen?null:slot.key)} style={{padding:'2px 10px',fontSize:'11px',fontWeight:600,backgroundColor:isOpen?colors.primary:colors.surface,color:isOpen?colors.textWhite:colors.primary,border:`1px solid ${colors.primary}`,borderRadius:radii.sm,transition:'all 150ms',cursor:'pointer'}}>{isOpen?'Hide base prompt':'View base prompt'}</button>
               </div>
               <div style={slotDesc}>{slot.description}</div>
               {isOpen&&<pre style={promptReadonly}>{slot.base}</pre>}
               <div style={{marginTop:'8px'}}>
                 <label style={{...fieldLabel,fontSize:'11px',display:'flex',justifyContent:'space-between'}}>
                   <span>Custom instructions <span style={slotTag}>(appended only)</span></span>
-                  <span style={{fontSize:'10px',fontWeight:400,color:c.textMuted}}>{addValue.length}/2000</span>
+                  <span style={{fontSize:'10px',fontWeight:400,color:colors.textMuted}}>{addValue.length}/2000</span>
                 </label>
                 <textarea value={addValue} onInput={e=>{const v=(e.target as HTMLTextAreaElement).value;if(v.length<=2000)updateLlm(slot.key,v)}} placeholder={`Optional. Example: "Keep the summary under 80 words and avoid the word 'passionate'."`} style={customArea}/>
               </div>
@@ -366,20 +366,9 @@ export function OptionsApp(): preact.JSX.Element {
         })}
       </div>}
 
-      {/* JSON Import */}
-      <div style={sectionTitle}>📥 Quick Import (Profile JSON)</div>
-      <textarea value={importJson} onInput={e=>setImportJson((e.target as HTMLTextAreaElement).value)} placeholder='Paste JSON (e.g. {"fullName":"John","contactEmail":"john@example.com",...})' style={{width:'100%',height:'56px',padding:'8px 10px',fontSize:'11px',border:`1px solid ${c.surfaceBorder}`,borderRadius:t.radiusSm,resize:'vertical',fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box',outline:'none',color:c.textPrimary,backgroundColor:c.surface}}/>
-      <div style={{display:'flex',gap:'8px',alignItems:'center',marginTop:'6px',marginBottom:'10px'}}>
-        <button onClick={doImport} style={{padding:'6px 16px',fontSize:'12px',fontWeight:600,backgroundColor:c.accent,color:'#fff',border:'none',borderRadius:'4px',cursor:'pointer'}}>📥 Import</button>
-        {importStatus!==''&&<span style={{fontSize:'12px',color:importStatus.startsWith('✓')?c.green:c.destructive}}>{importStatus}</span>}
-      </div>
+      <button onClick={doSave} disabled={saving} style={{width:'100%',padding:'14px',fontSize:'16px',fontWeight:700,backgroundColor:saving?colors.primaryLight:saveStatus.startsWith('✓')?colors.green:colors.primary,color:colors.textWhite,border:'none',borderRadius:radii.sm,cursor:saving?'not-allowed':'pointer',marginTop:'24px',transition:'all 150ms',boxShadow:shadows.sm}}>{saving?'⏳ Saving...':saveStatus.startsWith('✓')?'✓ Saved!':'💾 Save All Settings'}</button>
 
-      {/* Profile Fields */}
-      <div style={sectionTitle}>👤 Profile Fields</div>
-      <div style={{maxHeight:'none'}}>
-        {PROFILE_FIELDS.map(f=>(<div key={f.key} style={{marginBottom:'10px'}}><label style={fieldLabel}>{f.label}</label><input type={f.type} value={profile[f.key]} onInput={e=>{const v=(e.target as HTMLInputElement).value;updateP(f.key,f.type==='number'?(v===''?0:parseInt(v,10)||0):v)}} placeholder={f.placeholder} style={inputS}/></div>))}
-      </div>
-      <button onClick={doSave} disabled={saving} style={{width:'100%',padding:'14px',fontSize:'16px',fontWeight:700,backgroundColor:saving?c.primaryLight:c.primary,color:c.textWhite,border:'none',borderRadius:t.radiusSm,cursor:saving?'not-allowed':'pointer',marginTop:'24px',transition:'all 150ms',boxShadow:t.shadowSm}}>{saving?'⏳ Saving...':'💾 Save All Settings'}</button>
+      <LinkedInSearch />
     </div>
   );
 }

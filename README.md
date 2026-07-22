@@ -6,13 +6,17 @@ A browser extension that scrapes any job posting, tailors your application with 
 
 ## Screenshots
 
-| Popup | Options |
+| Cover Letter | Options |
 |-------|---------|
-| ![Popup](docs/images/1.png) | ![Options - LLM + Resume](docs/images/5.png) |
+| ![Cover Letter](docs/images/1.png) | ![Options - LLM + Resume](docs/images/5.png) |
 
-| Scrape & Tailor | Quick Match | Fill Form | Message Reply |
+| Scrape & Tailor | Quick Match | Custom Prompt | Message Reply |
 |-----------------|-------------|-----------|---------------|
-| ![Summary](docs/images/2.png) | ![Quick Match](docs/images/3.png) | ![Fill Form](docs/images/4.png) | ![Reply](docs/images/6.png) |
+| ![Summary](docs/images/2.png) | ![Quick Match](docs/images/3.png) | ![Custom Prompt](docs/images/4.png) | ![Reply](docs/images/7.png) |
+
+| Quick Match |
+|-------------|
+| ![Copy](docs/images/6.png) |
 
 ## What it does
 
@@ -21,7 +25,9 @@ A browser extension that scrapes any job posting, tailors your application with 
 - **✍️ Fill Form** — scrape form fields from any web form, match them to your profile via AI, and inject the values with one click
 - **💬 Message Reply** — craft articulate LinkedIn message replies based on your intent and resume
 - **📋 Copy to clipboard** on every piece of generated content
-- **⚙️ Options page** — configure LLM provider, API key, model, resume, profile fields, and all 6 prompt templates
+- **🔎 LinkedIn Search Builder** — build LinkedIn job search URLs from a structured form instead of hand-typing Boolean queries. Fill in job titles, skills, location/cities, time window, workplace type, experience level, job type, and Easy Apply — then open the search in a new tab with one click
+- **💾 Saved Presets** — name and save multiple search configs (e.g. "Backend Remote Germany") for quick reuse. Presets sync across the options page and popup shortcut
+- **⚙️ Options page** — configure LLM provider, API key, model, resume, profile fields, all 6 prompt templates, and the LinkedIn Search form
 
 ## Quick Start
 
@@ -70,6 +76,7 @@ All configurable via the **Options** page (right-click extension → Options, or
 | 📝 Prompt Templates | 6 editable prompts (Extract, Tailor, Cover Letter, Screening, Quick Match, Form Match) |
 | 👤 Profile Fields | 21 fields (name, email, phone, LinkedIn, GitHub, work authorization, salary, education, etc.) |
 | 📥 Quick Import | Paste a JSON profile to fill all fields at once |
+| 🔎 LinkedIn Search Builder | Job titles, included/excluded skills, location, cities (comma-separated), time posted, workplace type, experience level, job type, Easy Apply, sort by |
 
 ## Permissions
 
