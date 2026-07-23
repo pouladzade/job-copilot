@@ -2,7 +2,7 @@ import { render } from 'preact';
 import { useCallback, useEffect, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
 import { LinkedInSearch } from './LinkedInSearch';
-import { colors, radii, shadows, fontFamily, inputStyle, btnPrimary, fieldLabel, sectionTitle, btnSecondary, tabBar, tabBtn } from '../theme';
+import { colors, radii, shadows, fontFamily, inputStyle, btnPrimary, fieldLabel, sectionTitle, btnSecondary, tabBar, tabBtn } from './theme';
 
 interface ProfileData { readonly fullName: string; readonly contactEmail: string; readonly contactPhone: string; readonly city: string; readonly state: string; readonly linkedin: string; readonly portfolioUrl: string; readonly githubUrl: string; readonly workAuthorization: string; readonly salaryExpectations: string; readonly noticePeriod: string; readonly willingToRelocate: string; readonly yearsOfExperience: number; readonly currentTitle: string; readonly currentCompany: string; readonly highestDegree: string; readonly university: string; readonly fieldOfStudy: string; readonly desiredRole: string; readonly preferredLocation: string; readonly remotePreference: string; }
 interface LlmConfig { readonly apiUrl: string; readonly apiKey: string; readonly model: string; readonly resume: string; readonly prmExtractAdd: string; readonly prmTailorAdd: string; readonly prmCoverAdd: string; readonly prmScreeningAdd: string; readonly prmQuickAdd: string; readonly prmFormAdd: string; }
@@ -231,11 +231,11 @@ const PROFILE_FIELDS: ReadonlyArray<{key:keyof ProfileData;label:string;type:str
   {key:'remotePreference',label:'Remote Preference',type:'text',placeholder:'Remote / Hybrid / On-site'},
 ];
 
-const promptReadonly={width:'100%',padding:'10px 12px',fontSize:'11px',border:`1px solid ${colors.surfaceBorder}`,borderRadius:radii.sm,backgroundColor:colors.surfaceHover,color:colors.textSecondary,fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box'as const,lineHeight:1.5,whiteSpace:'pre-wrap'as const,overflowY:'auto'as const,maxHeight:'220px'};
-const customArea={width:'100%',height:'80px',padding:'8px 10px',fontSize:'12px',border:`1px solid ${colors.primaryBorder}`,borderRadius:radii.sm,backgroundColor:colors.primaryBg,resize:'vertical',fontFamily,boxSizing:'border-box'as const,lineHeight:1.4,outline:'none',color:colors.textPrimary};
-const slotCard={padding:'14px',border:`1px solid ${colors.surfaceBorder}`,borderRadius:radii.md,marginBottom:'14px',backgroundColor:colors.surface};
+const promptReadonly={width:'100%',padding:'10px 12px',fontSize:'11px',border:`1px solid ${colors.border}`,borderRadius:radii.sm,backgroundColor:colors.surfaceHover,color:colors.textSecondary,fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box'as const,lineHeight:1.5,whiteSpace:'pre-wrap'as const,overflowY:'auto'as const,maxHeight:'220px'};
+const customArea={width:'100%',height:'80px',padding:'8px 10px',fontSize:'12px',border:`1px solid ${colors.accentBorder}`,borderRadius:radii.sm,backgroundColor:colors.accentBg,resize:'vertical',fontFamily,boxSizing:'border-box'as const,lineHeight:1.4,outline:'none',color:colors.textPrimary};
+const slotCard={padding:'14px',border:`1px solid ${colors.border}`,borderRadius:radii.md,marginBottom:'14px',backgroundColor:colors.surface};
 const slotHeader={display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:'4px'};
-const slotTitle={fontSize:'13px',fontWeight:700,color:colors.primary};
+const slotTitle={fontSize:'13px',fontWeight:700,color:colors.accent};
 const slotDesc={fontSize:'11px',color:colors.textMuted,marginBottom:'10px'};
 const slotTag={fontSize:'10px',fontWeight:600,color:colors.textMuted,textTransform:'uppercase'as const,letterSpacing:'0.04em'};
 
@@ -302,7 +302,7 @@ export function OptionsApp(): preact.JSX.Element {
   return(
     <div style={{fontFamily:fontFamily,fontSize:'15px',maxWidth:'860px',margin:'0 auto',padding:'30px 24px',color:colors.textPrimary,backgroundColor:'#FFFFFF'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px'}}>
-        <h1 style={{margin:0,fontSize:'24px',fontWeight:800,color:colors.primary,letterSpacing:'-0.02em'}}>⚙️ Settings</h1>
+        <h1 style={{margin:0,fontSize:'24px',fontWeight:800,color:colors.accent,letterSpacing:'-0.02em'}}>⚙️ Settings</h1>
         <span style={{fontSize:'14px',fontWeight:600,color:saveStatus.startsWith('✓')?colors.green:colors.textMuted}}>{saveStatus}</span>
       </div>
 
@@ -323,9 +323,9 @@ export function OptionsApp(): preact.JSX.Element {
       {/* ── Tab: Resume & Profile ── */}
       {settingsTab==='profile'&&<div>
         <div style={sectionTitle}>📄 Resume (Markdown)</div>
-        <textarea value={llm.resume} onInput={e=>updateLlm('resume',(e.target as HTMLTextAreaElement).value)} placeholder="Paste your full resume in markdown here..." style={{width:'100%',height:'150px',padding:'10px 12px',fontSize:'12px',border:`1px solid ${colors.surfaceBorder}`,borderRadius:radii.sm,resize:'vertical',fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box',outline:'none',color:colors.textPrimary,backgroundColor:colors.surface}}/>
+        <textarea value={llm.resume} onInput={e=>updateLlm('resume',(e.target as HTMLTextAreaElement).value)} placeholder="Paste your full resume in markdown here..." style={{width:'100%',height:'150px',padding:'10px 12px',fontSize:'12px',border:`1px solid ${colors.border}`,borderRadius:radii.sm,resize:'vertical',fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box',outline:'none',color:colors.textPrimary,backgroundColor:colors.surface}}/>
         <div style={{marginTop:'8px',display:'flex',gap:'8px',alignItems:'center',marginBottom:'20px'}}>
-          <button onClick={doParseResume} disabled={parseStatus==='parsing'} style={{padding:'6px 14px',fontSize:'12px',fontWeight:600,backgroundColor:parseStatus==='parsing'?colors.primaryLight:colors.primary,color:colors.textWhite,border:'none',borderRadius:radii.sm,cursor:parseStatus==='parsing'?'not-allowed':'pointer',transition:'all 150ms'}}>
+          <button onClick={doParseResume} disabled={parseStatus==='parsing'} style={{padding:'6px 14px',fontSize:'12px',fontWeight:600,backgroundColor:parseStatus==='parsing'?colors.accentHover:colors.accent,color:colors.textWhite,border:'none',borderRadius:radii.sm,cursor:parseStatus==='parsing'?'not-allowed':'pointer',transition:'all 150ms'}}>
             {parseStatus==='parsing'?'Parsing resume...':'Auto-fill Profile'}
           </button>
           {parseStatus==='error'&&<span style={{fontSize:'12px',color:colors.destructive}}>{parseError}</span>}
@@ -341,7 +341,7 @@ export function OptionsApp(): preact.JSX.Element {
       {/* ── Tab: Prompts ── */}
       {settingsTab==='prompts'&&<div>
         <p style={{fontSize:'11px',color:colors.textSecondary,margin:'0 0 12px',lineHeight:1.5}}>
-          Base prompts are locked to keep the JSON output structure stable. You can add short guidance per template (tone, emphasis, length, things to avoid). The runner injects your text into a fixed <code style={{backgroundColor:colors.primaryBg,color:colors.primaryFg,padding:'0 4px',borderRadius:'3px',fontSize:'11px'}}>User Custom Instructions</code> slot before the data section.
+          Base prompts are locked to keep the JSON output structure stable. You can add short guidance per template (tone, emphasis, length, things to avoid). The runner injects your text into a fixed <code style={{backgroundColor:colors.accentBg,color:colors.textPrimary,padding:'0 4px',borderRadius:'3px',fontSize:'11px'}}>User Custom Instructions</code> slot before the data section.
         </p>
         {PROMPT_SLOTS.map(slot=>{
           const isOpen=expandedSlot===slot.key;
@@ -350,7 +350,7 @@ export function OptionsApp(): preact.JSX.Element {
             <div key={slot.key} style={slotCard}>
               <div style={slotHeader}>
                 <span style={slotTitle}>{slot.label}</span>
-                <button onClick={()=>setExpandedSlot(isOpen?null:slot.key)} style={{padding:'2px 10px',fontSize:'11px',fontWeight:600,backgroundColor:isOpen?colors.primary:colors.surface,color:isOpen?colors.textWhite:colors.primary,border:`1px solid ${colors.primary}`,borderRadius:radii.sm,transition:'all 150ms',cursor:'pointer'}}>{isOpen?'Hide base prompt':'View base prompt'}</button>
+                <button onClick={()=>setExpandedSlot(isOpen?null:slot.key)} style={{padding:'2px 10px',fontSize:'11px',fontWeight:600,backgroundColor:isOpen?colors.accent:colors.surface,color:isOpen?colors.textWhite:colors.accent,border:`1px solid ${colors.accent}`,borderRadius:radii.sm,transition:'all 150ms',cursor:'pointer'}}>{isOpen?'Hide base prompt':'View base prompt'}</button>
               </div>
               <div style={slotDesc}>{slot.description}</div>
               {isOpen&&<pre style={promptReadonly}>{slot.base}</pre>}
@@ -366,7 +366,7 @@ export function OptionsApp(): preact.JSX.Element {
         })}
       </div>}
 
-      <button onClick={doSave} disabled={saving} style={{width:'100%',padding:'14px',fontSize:'16px',fontWeight:700,backgroundColor:saving?colors.primaryLight:saveStatus.startsWith('✓')?colors.green:colors.primary,color:colors.textWhite,border:'none',borderRadius:radii.sm,cursor:saving?'not-allowed':'pointer',marginTop:'24px',transition:'all 150ms',boxShadow:shadows.sm}}>{saving?'⏳ Saving...':saveStatus.startsWith('✓')?'✓ Saved!':'💾 Save All Settings'}</button>
+      <button onClick={doSave} disabled={saving} style={{width:'100%',padding:'14px',fontSize:'16px',fontWeight:700,backgroundColor:saving?colors.accentHover:saveStatus.startsWith('✓')?colors.green:colors.accent,color:colors.textWhite,border:'none',borderRadius:radii.sm,cursor:saving?'not-allowed':'pointer',marginTop:'24px',transition:'all 150ms',boxShadow:shadows.sm}}>{saving?'⏳ Saving...':saveStatus.startsWith('✓')?'✓ Saved!':'💾 Save All Settings'}</button>
 
       <LinkedInSearch />
     </div>

@@ -2,7 +2,7 @@ import type { JSX } from 'preact';
 import { useCallback, useEffect, useState } from 'preact/hooks';
 import { buildLinkedInSearchUrl } from '../utils/linkedin-search-builder';
 import type { LinkedInSearchConfig } from '../utils/linkedin-search-builder';
-import { colors, radii, sectionTitle, fieldLabel, inputStyle, selectStyle, btnPrimary, btnSecondary, btnDestructive, chip } from '../theme';
+import { colors, radii, sectionTitle, fieldLabel, inputStyle, selectStyle, btnPrimary, btnSecondary, btnDestructive, chip } from './theme';
 
 // ── Constants ─────────────────────────────────────────────────────────
 
