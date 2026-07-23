@@ -4,7 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/pouladzade/job-hunter-agent?color=%238B6DFF)](https://github.com/pouladzade/job-hunter-agent/releases)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-orange)](https://developer.chrome.com/docs/extensions/mv3/intro/)
-[![License](https://img.shields.io/badge/license-private-red)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-%238B6DFF)](LICENSE)
 <br>
 [![codecov](https://codecov.io/gh/pouladzade/job-hunter-agent/branch/main/graph/badge.svg)](https://codecov.io/gh/pouladzade/job-hunter-agent)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](https://github.com/pouladzade/job-hunter-agent/pulls)
@@ -119,4 +119,4 @@ Content Script — injects into web pages, scrapes text & forms
 
 ## License
 
-Private — not licensed for redistribution.
+Apache 2.0 — see [LICENSE](LICENSE) for details.
