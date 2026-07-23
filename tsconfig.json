@@ -34,7 +34,7 @@
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "types": [
-      "webextension-polyfill",
+      "chrome",
       "jest"
     ]
   },
