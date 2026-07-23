@@ -1,5 +1,14 @@
 # AI Job Copilot
 
+[![CI](https://github.com/pouladzade/job-hunter-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/pouladzade/job-hunter-agent/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/pouladzade/job-hunter-agent?color=%238B6DFF)](https://github.com/pouladzade/job-hunter-agent/releases)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
+[![Manifest V3](https://img.shields.io/badge/Manifest-V3-orange)](https://developer.chrome.com/docs/extensions/mv3/intro/)
+[![License](https://img.shields.io/badge/license-private-red)](LICENSE)
+<br>
+[![codecov](https://codecov.io/gh/pouladzade/job-hunter-agent/branch/main/graph/badge.svg)](https://codecov.io/gh/pouladzade/job-hunter-agent)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](https://github.com/pouladzade/job-hunter-agent/pulls)
+
 A browser extension that scrapes any job posting, tailors your application with AI, fills web forms, and crafts message replies — all without ever submitting anything automatically.
 
 **No backend. No database. No Docker.** Everything runs in your browser. Your API key, resume, and profile stay in Chrome's local storage.
