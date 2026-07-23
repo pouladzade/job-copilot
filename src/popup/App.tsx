@@ -3,45 +3,9 @@ import { useCallback, useEffect, useState } from 'preact/hooks';
 
 import type { JSX } from 'preact';
 import { buildLinkedInSearchUrl } from '../utils/linkedin-search-builder';
+import { colors, radii, fontFamily } from "./theme";
 import type { LinkedInSearchConfig } from '../utils/linkedin-search-builder';
 
-// ── Design Tokens ────────────────────────────────────────────────────
-const colors = {
-  primary: '#007ACC',
-  primaryLight: '#1A8CD9',
-  primaryBg: 'rgba(0,122,204,0.08)',
-  primaryBorder: 'rgba(0,122,204,0.2)',
-  primaryFg: '#1E1E1E',
-  accent: '#007ACC',
-  accentHover: '#1A8CD9',
-  purple: '#5C6BC0',
-  purpleBg: 'rgba(92,107,192,0.08)',
-  purpleBorder: 'rgba(92,107,192,0.2)',
-  green: '#40A860',
-  greenBg: 'rgba(64,168,96,0.08)',
-  greenBorder: 'rgba(64,168,96,0.2)',
-  orange: '#D4A017',
-  orangeBg: 'rgba(212,160,23,0.08)',
-  destructive: '#D65757',
-  destructiveBg: 'rgba(214,87,87,0.08)',
-  destructiveBorder: 'rgba(214,87,87,0.2)',
-  surface: '#F3F3F3',
-  surfaceHover: '#E8E8E8',
-  surfaceBorder: 'rgba(0,0,0,0.08)',
-  textPrimary: '#1E1E1E',
-  textSecondary: '#616161',
-  textMuted: '#8E8E90',
-  textWhite: '#FFFFFF',
-} as const;
-
-const tokens = {
-  radiusSm: '6px',
-  radiusMd: '8px',
-  radiusLg: '12px',
-  shadowSm: '0 1px 2px rgba(0,0,0,0.06)',
-  shadowMd: '0 4px 12px rgba(0,0,0,0.08)',
-  fontFamily: '"Inter", system-ui, -apple-system, sans-serif',
-} as const;
 
 // ── Types ────────────────────────────────────────────────────────────
 interface TokenUsage {
@@ -130,11 +94,13 @@ function Container(p: { readonly children: preact.ComponentChildren }): JSX.Elem
         width: '100%',
         maxWidth: '520px',
         minHeight: '280px',
-        fontFamily: tokens.fontFamily,
+        fontFamily,
         fontSize: '13px',
         lineHeight: 1.5,
         color: colors.textPrimary,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.bg,
+        borderRadius: '18px',
+        border: '1px solid rgba(255,255,255,0.06)',
         overflow: 'hidden',
       }}
     >
@@ -149,17 +115,17 @@ function Header(_p: Record<string, never>): JSX.Element {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '10px',
-        padding: '12px 14px',
-        background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryLight})`,
+        gap: '8px',
+        padding: '8px 14px',
+        backgroundColor: colors.card,
       }}
     >
       <img
         src="assets/logo.png"
         alt="AI Job Copilot"
-        style={{ width: '28px', height: '28px', flexShrink: 0 }}
+        style={{ width: '20px', height: '20px', flexShrink: 0 }}
       />
-      <span style={{ fontWeight: 700, fontSize: '14px', color: colors.textWhite, letterSpacing: '-0.01em' }}>
+      <span style={{ fontWeight: 600, fontSize: '12px', color: colors.textSecondary, letterSpacing: '-0.01em' }}>
         AI Job Copilot
       </span>
     </div>
@@ -173,8 +139,8 @@ function Spinner(p: { readonly text: string }): JSX.Element {
         style={{
           width: '32px',
           height: '32px',
-          border: `3px solid ${colors.primaryBorder}`,
-          borderTopColor: colors.primary,
+          border: `3px solid ${colors.accentBorder}`,
+          borderTopColor: colors.accent,
           borderRadius: '50%',
           animation: 'jhs-spin 0.7s linear infinite',
           margin: '0 auto 12px',
@@ -203,7 +169,7 @@ function ErrorPanel(p: {
         style={{
           padding: '12px',
           backgroundColor: colors.destructiveBg,
-          borderRadius: tokens.radiusMd,
+          borderRadius: radii.md,
           marginBottom: '12px',
           border: `1px solid ${colors.destructiveBorder}`,
         }}
@@ -241,7 +207,7 @@ function ErrorPanel(p: {
                 backgroundColor: colors.surface,
                 color: colors.destructive,
                 border: `1px solid ${colors.destructiveBorder}`,
-                borderRadius: tokens.radiusSm,
+                borderRadius: radii.sm,
                 cursor: 'pointer',
               }}
             >
@@ -255,8 +221,8 @@ function ErrorPanel(p: {
                   fontSize: '10px',
                   color: colors.textPrimary,
                   backgroundColor: colors.surfaceHover,
-                  border: `1px solid ${colors.surfaceBorder}`,
-                  borderRadius: tokens.radiusSm,
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: radii.sm,
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word',
                   maxHeight: '200px',
@@ -286,7 +252,7 @@ function TokenBadge(p: { readonly usage: TokenUsage }): JSX.Element {
         backgroundColor: colors.surface,
         padding: '2px 8px',
         borderRadius: '99px',
-        border: `1px solid ${colors.surfaceBorder}`,
+        border: `1px solid ${colors.border}`,
       }}
     >
       {p.usage.totalTokens.toLocaleString()} tokens (~${p.usage.estimatedCostUsd.toFixed(4)})
@@ -304,8 +270,8 @@ function BackButton(p: { readonly onClick: () => void }): JSX.Element {
         fontWeight: 600,
         backgroundColor: colors.surface,
         color: colors.textSecondary,
-        border: `1px solid ${colors.surfaceBorder}`,
-        borderRadius: tokens.radiusSm,
+        border: `1px solid ${colors.border}`,
+        borderRadius: radii.sm,
         cursor: 'pointer',
         transition: 'all 150ms',
       }}
@@ -333,7 +299,7 @@ function CopyButton(p: { readonly text: string; readonly label?: string }): JSX.
 
   const bg = copied ? colors.greenBg : colors.surface;
   const fg = copied ? colors.green : colors.textMuted;
-  const bd = copied ? colors.greenBorder : colors.surfaceBorder;
+  const bd = copied ? colors.greenBorder : colors.border;
 
   return (
     <button
@@ -345,7 +311,7 @@ function CopyButton(p: { readonly text: string; readonly label?: string }): JSX.
         backgroundColor: bg,
         color: fg,
         border: `1px solid ${bd}`,
-        borderRadius: tokens.radiusSm,
+        borderRadius: radii.sm,
         cursor: 'pointer',
         transition: 'all 150ms',
         whiteSpace: 'nowrap',
@@ -641,8 +607,8 @@ function LinkedInSearchBar(): JSX.Element {
         marginBottom: '10px',
         padding: '8px 10px',
         backgroundColor: colors.surface,
-        borderRadius: tokens.radiusSm,
-        border: `1px solid ${colors.surfaceBorder}`,
+        borderRadius: radii.sm,
+        border: `1px solid ${colors.border}`,
       }}
     >
       <select
@@ -652,11 +618,11 @@ function LinkedInSearchBar(): JSX.Element {
           flex: 1,
           padding: '6px 8px',
           fontSize: '12px',
-          border: `1px solid ${colors.surfaceBorder}`,
-          borderRadius: tokens.radiusSm,
-          backgroundColor: '#FFFFFF',
+          border: `1px solid ${colors.border}`,
+          borderRadius: radii.sm,
+          backgroundColor: colors.bg,
           color: colors.textPrimary,
-          fontFamily: tokens.fontFamily,
+          fontFamily: fontFamily,
           outline: 'none',
           minWidth: 0,
         }}
@@ -675,10 +641,10 @@ function LinkedInSearchBar(): JSX.Element {
           padding: '6px 12px',
           fontSize: '12px',
           fontWeight: 600,
-          backgroundColor: selected === '' ? colors.surfaceHover : colors.primary,
+          backgroundColor: selected === '' ? colors.surfaceHover : colors.accent,
           color: selected === '' ? colors.textMuted : colors.textWhite,
           border: 'none',
-          borderRadius: tokens.radiusSm,
+          borderRadius: radii.sm,
           cursor: selected === '' ? 'not-allowed' : 'pointer',
           whiteSpace: 'nowrap',
           transition: 'all 150ms',
@@ -700,63 +666,76 @@ function IdlePanel(p: {
   readonly onFillOnly: () => void;
   readonly onReply: () => void;
 }): JSX.Element {
-  const primaryBtn: Record<string, string | number> = {
+  const neutralBtn: Record<string, string | number> = {
     width: '100%',
-    padding: '11px 14px',
+    padding: '12px 14px',
     fontSize: '13px',
-    fontWeight: 600,
-    backgroundColor: colors.primary,
-    color: colors.textWhite,
-    border: 'none',
-    borderRadius: tokens.radiusSm,
+    fontWeight: 500,
+    backgroundColor: colors.surface,
+    color: colors.textSecondary,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radii.sm,
     cursor: 'pointer',
     transition: 'all 150ms',
-    boxShadow: tokens.shadowSm,
+  };
+
+  const accentBtn: Record<string, string | number> = {
+    ...neutralBtn,
+    fontWeight: 600,
+    backgroundColor: colors.accent,
+    color: colors.textWhite,
+    border: 'none',
+    boxShadow: '0 0 20px rgba(139,109,255,0.25)',
   };
 
   return (
     <div>
       <LinkedInSearchBar />
-      <p style={{ fontSize: '11px', color: colors.textMuted, margin: '0 0 10px' }}>
+      <p style={{ fontSize: '11px', color: colors.textMuted, margin: '0 0 12px' }}>
         Open a job posting, then choose an action:
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
         <button
           onClick={p.onSummary}
-          style={primaryBtn}
+          style={neutralBtn}
           onMouseEnter={(e) => {
-            (e.target as HTMLElement).style.backgroundColor = colors.primaryLight;
+            (e.target as HTMLElement).style.backgroundColor = colors.surfaceHover;
           }}
           onMouseLeave={(e) => {
-            (e.target as HTMLElement).style.backgroundColor = colors.primary;
+            (e.target as HTMLElement).style.backgroundColor = colors.surface;
           }}
         >
           Summary
         </button>
         <button
           onClick={p.onCover}
-          style={{
-            ...primaryBtn,
-            backgroundColor: colors.purple,
-          }}
+          style={neutralBtn}
           onMouseEnter={(e) => {
-            (e.target as HTMLElement).style.backgroundColor = '#6D28D9';
+            (e.target as HTMLElement).style.backgroundColor = colors.surfaceHover;
           }}
           onMouseLeave={(e) => {
-            (e.target as HTMLElement).style.backgroundColor = colors.purple;
+            (e.target as HTMLElement).style.backgroundColor = colors.surface;
           }}
         >
           Cover Letter
         </button>
       </div>
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
         <button
           onClick={p.onQuickMatch}
-          style={{
-            flex: 1,
-            ...primaryBtn,
-            backgroundColor: colors.accent,
+          style={{ flex: 1, ...neutralBtn }}
+          onMouseEnter={(e) => {
+            (e.target as HTMLElement).style.backgroundColor = colors.surfaceHover;
           }}
+          onMouseLeave={(e) => {
+            (e.target as HTMLElement).style.backgroundColor = colors.surface;
+          }}
+        >
+          Quick Match
+        </button>
+        <button
+          onClick={p.onFillOnly}
+          style={{ flex: 1, ...accentBtn }}
           onMouseEnter={(e) => {
             (e.target as HTMLElement).style.backgroundColor = colors.accentHover;
           }}
@@ -764,30 +743,14 @@ function IdlePanel(p: {
             (e.target as HTMLElement).style.backgroundColor = colors.accent;
           }}
         >
-          Quick Match
-        </button>
-        <button
-          onClick={p.onFillOnly}
-          style={{
-            flex: 1,
-            ...primaryBtn,
-            backgroundColor: colors.green,
-          }}
-          onMouseEnter={(e) => {
-            (e.target as HTMLElement).style.backgroundColor = '#15803D';
-          }}
-          onMouseLeave={(e) => {
-            (e.target as HTMLElement).style.backgroundColor = colors.green;
-          }}
-        >
           Fill Form
         </button>
       </div>
       <div
         style={{
-          borderTop: `1px solid ${colors.surfaceBorder}`,
-          paddingTop: '12px',
-          marginTop: '4px',
+          borderTop: `1px solid ${colors.border}`,
+          paddingTop: '16px',
+          marginTop: '8px',
         }}
       >
         <div
@@ -795,7 +758,7 @@ function IdlePanel(p: {
             fontSize: '12px',
             fontWeight: 600,
             color: colors.textSecondary,
-            marginBottom: '8px',
+            marginBottom: '10px',
           }}
         >
           Message Reply
@@ -806,13 +769,15 @@ function IdlePanel(p: {
           placeholder={`What should the reply say? (e.g. "I'm interested but my salary expectation is 90k")`}
           style={{
             width: '100%',
-            height: '64px',
-            padding: '8px 10px',
+            height: '72px',
+            padding: '12px 14px',
             fontSize: '12px',
-            border: `1px solid ${colors.surfaceBorder}`,
-            borderRadius: tokens.radiusSm,
+            backgroundColor: colors.surface,
+            color: colors.textPrimary,
+            border: `1px solid ${colors.border}`,
+            borderRadius: '14px',
             resize: 'vertical',
-            fontFamily: tokens.fontFamily,
+            fontFamily,
             boxSizing: 'border-box' as const,
             lineHeight: 1.5,
             transition: 'border-color 150ms',
@@ -823,18 +788,18 @@ function IdlePanel(p: {
           onClick={p.onReply}
           disabled={p.replyPrompt.trim() === ''}
           style={{
-            ...primaryBtn,
-            marginTop: '8px',
+            ...accentBtn,
+            width: '100%',
+            marginTop: '10px',
             opacity: p.replyPrompt.trim() === '' ? 0.45 : 1,
             cursor: p.replyPrompt.trim() === '' ? 'not-allowed' : 'pointer',
-            backgroundColor: colors.primary,
           }}
           onMouseEnter={(e) => {
             if (p.replyPrompt.trim() !== '')
-              (e.target as HTMLElement).style.backgroundColor = colors.primaryLight;
+              (e.target as HTMLElement).style.backgroundColor = colors.accentHover;
           }}
           onMouseLeave={(e) => {
-            (e.target as HTMLElement).style.backgroundColor = colors.primary;
+            (e.target as HTMLElement).style.backgroundColor = colors.accent;
           }}
         >
           Craft Reply
@@ -854,9 +819,9 @@ function GeneratedPanel(p: {
   const r = p.result;
   const isSummary = r.kind === 'summary';
   const text = isSummary ? r.summary : r.coverLetter;
-  const headerBg = isSummary ? colors.primaryBg : colors.purpleBg;
-  const headerBd = isSummary ? colors.primaryBorder : colors.purpleBorder;
-  const headerFg = isSummary ? colors.primaryFg : colors.purple;
+  const headerBg = isSummary ? colors.accentBg : colors.accentBg;
+  const headerBd = isSummary ? colors.accentBorder : colors.accentBorder;
+  const headerFg = isSummary ? colors.textPrimary : colors.accent;
   const title = isSummary ? 'Professional Summary' : 'Cover Letter';
 
   return (
@@ -865,13 +830,13 @@ function GeneratedPanel(p: {
         style={{
           padding: '8px 12px',
           backgroundColor: colors.surfaceHover,
-          borderRadius: tokens.radiusMd,
+          borderRadius: radii.md,
           marginBottom: '10px',
           fontSize: '11px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          border: `1px solid ${colors.surfaceBorder}`,
+          border: `1px solid ${colors.border}`,
         }}
       >
         <span style={{ fontWeight: 600, color: colors.textPrimary }}>
@@ -885,7 +850,7 @@ function GeneratedPanel(p: {
         style={{
           padding: '12px',
           backgroundColor: headerBg,
-          borderRadius: tokens.radiusMd,
+          borderRadius: radii.md,
           marginBottom: '12px',
           border: `1px solid ${headerBd}`,
         }}
@@ -907,7 +872,7 @@ function GeneratedPanel(p: {
           style={{
             margin: 0,
             whiteSpace: 'pre-wrap',
-            fontFamily: tokens.fontFamily,
+            fontFamily: fontFamily,
             fontSize: '12px',
             lineHeight: 1.6,
             color: colors.textPrimary,
@@ -927,9 +892,9 @@ function GeneratedPanel(p: {
             fontSize: '12px',
             fontWeight: 600,
             backgroundColor: colors.surface,
-            color: colors.primary,
-            border: `1px solid ${colors.primaryBorder}`,
-            borderRadius: tokens.radiusSm,
+            color: colors.accent,
+            border: `1px solid ${colors.accentBorder}`,
+            borderRadius: radii.sm,
             cursor: 'pointer',
           }}
         >
@@ -943,8 +908,8 @@ function GeneratedPanel(p: {
             fontWeight: 600,
             backgroundColor: colors.surface,
             color: colors.textMuted,
-            border: `1px solid ${colors.surfaceBorder}`,
-            borderRadius: tokens.radiusSm,
+            border: `1px solid ${colors.border}`,
+            borderRadius: radii.sm,
             cursor: 'pointer',
           }}
         >
@@ -969,7 +934,7 @@ function QuickMatchPanel(p: { readonly result: QuickMatchResult; readonly onClea
         style={{
           padding: '14px',
           backgroundColor: scoreBg,
-          borderRadius: tokens.radiusMd,
+          borderRadius: radii.md,
           marginBottom: '12px',
           border: `1px solid ${scoreBorder}`,
         }}
@@ -1018,8 +983,8 @@ function QuickMatchPanel(p: { readonly result: QuickMatchResult; readonly onClea
           fontWeight: 600,
           backgroundColor: colors.surface,
           color: colors.textMuted,
-          border: `1px solid ${colors.surfaceBorder}`,
-          borderRadius: tokens.radiusSm,
+          border: `1px solid ${colors.border}`,
+          borderRadius: radii.sm,
           cursor: 'pointer',
         }}
       >
@@ -1035,10 +1000,10 @@ function ReplyPanel(p: { readonly result: ReplyResult; readonly onClear: () => v
       <div
         style={{
           padding: '12px',
-          backgroundColor: colors.purpleBg,
-          borderRadius: tokens.radiusMd,
+          backgroundColor: colors.accentBg,
+          borderRadius: radii.md,
           marginBottom: '12px',
-          border: `1px solid ${colors.purpleBorder}`,
+          border: `1px solid ${colors.accentBorder}`,
         }}
       >
         <div
@@ -1049,7 +1014,7 @@ function ReplyPanel(p: { readonly result: ReplyResult; readonly onClear: () => v
             marginBottom: '8px',
           }}
         >
-          <span style={{ fontSize: '13px', fontWeight: 700, color: colors.purple }}>
+          <span style={{ fontSize: '13px', fontWeight: 700, color: colors.accent }}>
             AI Reply
           </span>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -1061,7 +1026,7 @@ function ReplyPanel(p: { readonly result: ReplyResult; readonly onClear: () => v
           style={{
             margin: 0,
             whiteSpace: 'pre-wrap',
-            fontFamily: tokens.fontFamily,
+            fontFamily: fontFamily,
             fontSize: '12px',
             lineHeight: 1.6,
             color: colors.textPrimary,
@@ -1081,8 +1046,8 @@ function ReplyPanel(p: { readonly result: ReplyResult; readonly onClear: () => v
           fontWeight: 600,
           backgroundColor: colors.surface,
           color: colors.textMuted,
-          border: `1px solid ${colors.surfaceBorder}`,
-          borderRadius: tokens.radiusSm,
+          border: `1px solid ${colors.border}`,
+          borderRadius: radii.sm,
           cursor: 'pointer',
         }}
       >
@@ -1109,7 +1074,7 @@ function MatchedPanel(p: {
         style={{
           padding: '10px 12px',
           backgroundColor: colors.greenBg,
-          borderRadius: tokens.radiusMd,
+          borderRadius: radii.md,
           marginBottom: '10px',
           fontSize: '12px',
           fontWeight: 600,
@@ -1130,8 +1095,8 @@ function MatchedPanel(p: {
               key={i}
               style={{
                 padding: '8px 10px',
-                border: `1px solid ${colors.surfaceBorder}`,
-                borderRadius: tokens.radiusSm,
+                border: `1px solid ${colors.border}`,
+                borderRadius: radii.sm,
                 marginBottom: '6px',
                 fontSize: '11px',
                 backgroundColor: colors.surface,
@@ -1195,12 +1160,12 @@ function MatchedPanel(p: {
               backgroundColor: colors.green,
               color: colors.textWhite,
               border: 'none',
-              borderRadius: tokens.radiusSm,
+              borderRadius: radii.sm,
               cursor: 'pointer',
               transition: 'all 150ms',
             }}
             onMouseEnter={(e) => {
-              (e.target as HTMLElement).style.backgroundColor = '#15803D';
+              (e.target as HTMLElement).style.backgroundColor = colors.green;
             }}
             onMouseLeave={(e) => {
               (e.target as HTMLElement).style.backgroundColor = colors.green;
@@ -1215,7 +1180,7 @@ function MatchedPanel(p: {
               padding: '10px',
               textAlign: 'center',
               backgroundColor: colors.greenBg,
-              borderRadius: tokens.radiusSm,
+              borderRadius: radii.sm,
               fontSize: '12px',
               fontWeight: 600,
               color: colors.green,
@@ -1233,8 +1198,8 @@ function MatchedPanel(p: {
             fontWeight: 600,
             backgroundColor: colors.surface,
             color: colors.textMuted,
-            border: `1px solid ${colors.surfaceBorder}`,
-            borderRadius: tokens.radiusSm,
+            border: `1px solid ${colors.border}`,
+            borderRadius: radii.sm,
             cursor: 'pointer',
           }}
         >
