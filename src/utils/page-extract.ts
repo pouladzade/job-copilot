@@ -42,10 +42,10 @@ function flattenAddress(addr: unknown): string {
   if (!addr || typeof addr !== 'object') return '';
   const a = addr as Record<string, unknown>;
   const parts = [
-    asString(a['addressLocality']),
-    asString(a['addressRegion']),
-    asString(a['addressCountry']),
-    asString((a['address'] as Record<string, unknown> | undefined)?.['addressCountry']),
+    asString(a.addressLocality),
+    asString(a.addressRegion),
+    asString(a.addressCountry),
+    asString((a.address as Record<string, unknown> | undefined)?.addressCountry),
   ].filter((s) => s.length > 0);
   return parts.join(', ');
 }
@@ -58,7 +58,7 @@ function flattenJobLocation(loc: unknown): string {
   }
   if (typeof loc === 'object') {
     const o = loc as Record<string, unknown>;
-    const place = asString(o['name']) || flattenAddress(o['address']);
+    const place = asString(o.name) || flattenAddress(o.address);
     if (place) return place;
   }
   return '';
@@ -68,7 +68,7 @@ function flattenHiringOrganization(org: unknown): string {
   if (!org) return '';
   if (typeof org === 'string') return org;
   if (Array.isArray(org)) return org.map(flattenHiringOrganization).filter((s) => s.length > 0).join(', ');
-  if (typeof org === 'object') return asString((org as Record<string, unknown>)['name']);
+  if (typeof org === 'object') return asString((org as Record<string, unknown>).name);
   return '';
 }
 
@@ -97,10 +97,10 @@ export function extractJsonLd(doc: Document): { title: string; company: string; 
     try { parsed = JSON.parse(text); } catch { continue; }
     const node = findJobPostingNode(parsed);
     if (!node) continue;
-    const title = asString(node['title']);
-    const company = flattenHiringOrganization(node['hiringOrganization']);
-    const location = flattenJobLocation(node['jobLocation']);
-    const rawDesc = node['description'];
+    const title = asString(node.title);
+    const company = flattenHiringOrganization(node.hiringOrganization);
+    const location = flattenJobLocation(node.jobLocation);
+    const rawDesc = node.description;
     const description = stripHtml(typeof rawDesc === 'string' ? rawDesc : '');
     if (!title || !description) continue;
     return { title, company, location, description };
@@ -129,7 +129,7 @@ export function cleanTextForLlm(raw: string): string {
     .replace(/&#?\w+;/g, ' ')
     .replace(/\s+/g, ' ')
     .replace(/https?:\/\/\S+/g, '')
-    .replace(/[{}\[\]()]/g, '')
+    .replace(/[{}[\]()]/g, '')
     .replace(/[|>]+/g, ' ')
     .trim();
 }
@@ -173,7 +173,7 @@ export function extractWithTreeWalker(doc: Document): string {
 export async function getCachedExtraction(url: string): Promise<ExtractionResult | null> {
   try {
     const key = cacheKey(url);
-    const stored = await chrome.storage.session.get(key);
+    const stored = await browser.storage.session.get(key);
     const v = stored?.[key];
     if (v && typeof v === 'object') return v as ExtractionResult;
   } catch { /* fall through */ }
@@ -182,7 +182,7 @@ export async function getCachedExtraction(url: string): Promise<ExtractionResult
 
 export async function setCachedExtraction(result: ExtractionResult): Promise<void> {
   try {
-    await chrome.storage.session.set({ [cacheKey(result.url)]: result });
+    await browser.storage.session.set({ [cacheKey(result.url)]: result });
   } catch { /* quota errors must not break extraction */ }
 }
 

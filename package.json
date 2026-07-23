@@ -4,25 +4,41 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite build --watch",
-    "build": "tsc && vite build",
+    "dev": "wxt dev",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox --mv3",
+    "build:safari": "wxt build -b safari --mv3",
+    "build:all": "wxt build && wxt build -b firefox --mv3 && wxt build -b safari --mv3",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "jest --forceExit --passWithNoTests",
-    "test:ci": "jest --forceExit --coverage --passWithNoTests"
+    "test:ci": "jest --forceExit --coverage --passWithNoTests",
+    "prepare": "husky"
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",
     "preact": "^10.26.5"
   },
   "devDependencies": {
-    "@preact/preset-vite": "^2.10.2",
-    "@types/chrome": "^0.0.304",
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@eslint/js": "^10.0.1",
+    "@preact/preset-vite": "^2.10.6",
+    "@types/chrome": "^0.2.2",
     "@types/jest": "^29.5.14",
+    "eslint": "^10.7.0",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^30.4.1",
+    "lint-staged": "^17.1.1",
     "ts-jest": "^29.4.11",
     "typescript": "^5.7.0",
-    "vite": "^6.2.5"
+    "typescript-eslint": "^8.65.0",
+    "wxt": "^0.20.27"
   },
   "jest": {
     "preset": "ts-jest/presets/default-esm",
@@ -34,5 +50,14 @@
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"
     }
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,cjs}": [
+      "eslint --fix --no-warn-ignored",
+      "prettier --write"
+    ],
+    "*.{json,md,css,html}": [
+      "prettier --write"
+    ]
   }
 }

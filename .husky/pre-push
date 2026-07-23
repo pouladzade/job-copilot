@@ -1,6 +1,24 @@
 #!/bin/sh
-echo "⏳ Type check..."
-pnpm typecheck || { echo "❌ Type check failed"; exit 1; }
-echo "⏳ Backend unit tests..."
-pnpm --filter=backend test -- --forceExit || { echo "❌ Unit tests failed"; exit 1; }
-echo "✅ Push allowed"
+set -e
+
+echo "⏳ Installing dependencies..."
+pnpm install --frozen-lockfile
+
+echo ""
+echo "⏳ Running linter..."
+pnpm lint
+
+echo ""
+echo "⏳ Type checking..."
+pnpm typecheck
+
+echo ""
+echo "⏳ Building..."
+pnpm build
+
+echo ""
+echo "⏳ Running tests..."
+pnpm test
+
+echo ""
+echo "✅ Pre-push checks passed"

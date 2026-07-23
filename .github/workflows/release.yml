@@ -30,7 +30,6 @@ jobs:
 
           tmp=$(mktemp)
           jq --arg v "${TAG}" '.version = $v' package.json > "$tmp" && mv "$tmp" package.json
-          jq --arg v "${TAG}" '.version = $v' public/manifest.json > "$tmp" && mv "$tmp" public/manifest.json
 
       - name: TypeCheck
         run: pnpm run typecheck
@@ -38,18 +37,24 @@ jobs:
       - name: Test
         run: pnpm run test:ci
 
-      - name: Build
+      - name: Build (Chrome)
         run: pnpm run build
 
-      - name: Verify extension output
-        run: test -d dist && test -f dist/manifest.json
+      - name: Build (Firefox)
+        run: pnpm run build:firefox
 
-      - name: Package extension
-        run: cd dist && zip -r ../ai-job-copilot-v${VERSION}.zip .
+      - name: Build (Safari)
+        run: pnpm run build:safari
+
+      - name: Package extensions
+        run: |
+          pnpm wxt zip
+          pnpm wxt zip -b firefox --mv3
+          pnpm wxt zip -b safari --mv3
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: "v${VERSION}"
-          files: ai-job-copilot-v*.zip
+          files: .output/job-hunter-extension-*.zip
           generate_release_notes: true
