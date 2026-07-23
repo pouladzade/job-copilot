@@ -81,7 +81,7 @@ export function deterministicMatch(label: string, profile: Profile): { value: st
 
 export async function getProfile(): Promise<Profile> {
   try {
-    const r = await chrome.storage.local.get('profile');
+    const r = await browser.storage.local.get('profile');
     const s = r as Record<string, unknown>;
     const p = s['profile'];
     if (p && typeof p === 'object' && p !== null) return p as Profile;

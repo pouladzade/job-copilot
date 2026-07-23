@@ -41,3 +41,8 @@ const existingStorage = existingChrome?.['storage'] as Record<string, unknown> |
   ...(existingChrome ?? {}),
   storage: { ...(existingStorage ?? {}), session: sessionShim },
 };
+
+// Alias browser.* → chrome.* for WXT's webextension-polyfill.
+// In the real extension, WXT maps both; in tests we simply share the same mock.
+(globalThis as Record<string, unknown>)['browser'] =
+  (globalThis as Record<string, unknown>)['chrome'];

@@ -27,7 +27,7 @@ interface ScrapeFormFieldsResponse {
 interface FillMatchedResponse { readonly filled: number; readonly unmatched: number; }
 interface RevertResponse { readonly reverted: number; }
 
-chrome.runtime.onMessage.addListener(
+browser.runtime.onMessage.addListener(
   (message: { readonly type: 'ping' | 'scrape' | 'fillForm' | 'scrapeFormFields' | 'fillFormMatched' | 'revertForm'; readonly answers?: ReadonlyArray<{ readonly label: string; readonly value: string }>; readonly matches?: ReadonlyArray<FormMatchValue>; readonly kind?: 'summary' | 'coverLetter'; readonly quickMatch?: boolean }, _sender, sendResponse: (response: ScrapeResponse | { readonly filled: number } | { readonly pong: true } | ScrapeFormFieldsResponse | FillMatchedResponse | RevertResponse) => void): boolean => {
     if (message.type === 'ping') { sendResponse({ pong: true }); return false; }
     if (message.type === 'scrape') {
@@ -57,8 +57,8 @@ async function handleScrape(sendResponse: (response: ScrapeResponse) => void, ki
   }
 
   if (reply) {
-    chrome.runtime.sendMessage({ type: 'backend:reply', payload: { pageText: extraction.rawText.slice(0, 8000), replyPrompt } }, (r: BackendResponse) => {
-      if (chrome.runtime.lastError) { sendResponse({ success: false, error: chrome.runtime.lastError.message ?? 'BG error' }); return; }
+    browser.runtime.sendMessage({ type: 'backend:reply', payload: { pageText: extraction.rawText.slice(0, 8000), replyPrompt } }, (r: BackendResponse) => {
+      if (browser.runtime.lastError) { sendResponse({ success: false, error: browser.runtime.lastError.message ?? 'BG error' }); return; }
       if (!r.success) { sendResponse({ success: false, error: r.error, details: r.details, debug: `Source: ${sourceSite}\nExtraction: ${extraction.source}\nChars: ${extraction.rawText.length}` }); return; }
       sendResponse({ success: true, data: r.data });
     });
@@ -66,8 +66,8 @@ async function handleScrape(sendResponse: (response: ScrapeResponse) => void, ki
   }
 
   if (quickMatch) {
-    chrome.runtime.sendMessage({ type: 'backend:quickMatch', payload: { pageText: extraction.rawText, sourceUrl: currentUrl } }, (r: BackendResponse) => {
-      if (chrome.runtime.lastError) { sendResponse({ success: false, error: chrome.runtime.lastError.message ?? 'BG error' }); return; }
+    browser.runtime.sendMessage({ type: 'backend:quickMatch', payload: { pageText: extraction.rawText, sourceUrl: currentUrl } }, (r: BackendResponse) => {
+      if (browser.runtime.lastError) { sendResponse({ success: false, error: browser.runtime.lastError.message ?? 'BG error' }); return; }
       if (!r.success) { sendResponse({ success: false, error: r.error, details: r.details, debug: `Source: ${sourceSite}\nExtraction: ${extraction.source}\nChars: ${extraction.rawText.length}` }); return; }
       sendResponse({ success: true, data: r.data });
     });
@@ -75,8 +75,8 @@ async function handleScrape(sendResponse: (response: ScrapeResponse) => void, ki
   }
 
   const bgType = kind === 'coverLetter' ? 'backend:coverLetter' : 'backend:summary';
-  chrome.runtime.sendMessage({ type: bgType, payload: { extraction } }, (r: BackendResponse) => {
-    if (chrome.runtime.lastError) { sendResponse({ success: false, error: chrome.runtime.lastError.message ?? 'BG error', debug: `Source: ${sourceSite}\nExtraction: ${extraction.source}\nChars: ${extraction.rawText.length}` }); return; }
+  browser.runtime.sendMessage({ type: bgType, payload: { extraction } }, (r: BackendResponse) => {
+    if (browser.runtime.lastError) { sendResponse({ success: false, error: browser.runtime.lastError.message ?? 'BG error', debug: `Source: ${sourceSite}\nExtraction: ${extraction.source}\nChars: ${extraction.rawText.length}` }); return; }
     if (!r.success) { sendResponse({ success: false, error: r.error, details: r.details, debug: `Source: ${sourceSite}\nExtraction: ${extraction.source}\nChars: ${extraction.rawText.length}` }); return; }
     sendResponse({ success: true, data: { ...(r.data as Record<string, unknown>), sourceUrl: currentUrl, sourceSite, extractionSource: extraction.source } });
   });

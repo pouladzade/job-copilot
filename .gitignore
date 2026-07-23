@@ -53,3 +53,7 @@ docker/postgres_data/
 .agents/
 
 .clinerules
+
+# WXT build output
+.output/
+.wxt/

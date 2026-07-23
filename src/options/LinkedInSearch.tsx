@@ -83,7 +83,7 @@ export function LinkedInSearch(): JSX.Element {
 
   // Load presets from storage on mount
   useEffect(() => {
-    chrome.storage.local.get([STORAGE_KEY], (result) => {
+    browser.storage.local.get([STORAGE_KEY], (result) => {
       const stored = result[STORAGE_KEY] as unknown;
       if (Array.isArray(stored)) {
         const typed: Preset[] = stored.filter(
@@ -176,7 +176,7 @@ export function LinkedInSearch(): JSX.Element {
       ? presets.map((p) => (p.name === trimmed ? { name: trimmed, config } : p))
       : [...presets, { name: trimmed, config }];
 
-    chrome.storage.local.set({ [STORAGE_KEY]: updated }, () => {
+    browser.storage.local.set({ [STORAGE_KEY]: updated }, () => {
       setPresets(updated);
       setSelectedPreset(trimmed);
       showTempStatus(`✓ Saved "${trimmed}"`);
@@ -187,7 +187,7 @@ export function LinkedInSearch(): JSX.Element {
     if (selectedPreset === '') return;
 
     const updated = presets.filter((p) => p.name !== selectedPreset);
-    chrome.storage.local.set({ [STORAGE_KEY]: updated }, () => {
+    browser.storage.local.set({ [STORAGE_KEY]: updated }, () => {
       setPresets(updated);
       const remaining = updated.length > 0 ? updated[0]?.name ?? '' : '';
       setSelectedPreset(remaining);
@@ -236,7 +236,7 @@ export function LinkedInSearch(): JSX.Element {
     };
 
     const url = buildLinkedInSearchUrl(config);
-    chrome.tabs.create({ url });
+    browser.tabs.create({ url });
   }, [titles, includedSkills, excludedSkills, location, cities, timeWindowHours, sortByRecent, easyApply, workplaceTypes, experienceLevels, jobTypes]);
 
   // ── Status message ──

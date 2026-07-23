@@ -251,7 +251,7 @@ export function OptionsApp(): preact.JSX.Element {
   const [settingsTab,setSettingsTab]=useState<SettingsTab>('llm');
 
   useEffect(()=>{
-    chrome.storage.local.get(['profile','llmConfig'],(r)=>{
+    browser.storage.local.get(['profile','llmConfig'],(r)=>{
       const s=r as Record<string,unknown>;
       if(s['profile']&&typeof s['profile']==='object'&&s['profile']!==null)setProfile({...PROFILE_DEFAULTS,...(s['profile']as Partial<ProfileData>)});
       if(s['llmConfig']&&typeof s['llmConfig']==='object'&&s['llmConfig']!==null){
@@ -261,7 +261,7 @@ export function OptionsApp(): preact.JSX.Element {
         let stripped=false;
         for(const k of LEGACY_KEYS){if(k in cleaned){delete cleaned[k];stripped=true}}
         setLlm(p=>({...p,...(cleaned as Partial<LlmConfig>)}));
-        if(stripped)chrome.storage.local.set({llmConfig:cleaned});
+        if(stripped)browser.storage.local.set({llmConfig:cleaned});
       }
     });
   },[]);
@@ -272,7 +272,7 @@ export function OptionsApp(): preact.JSX.Element {
   const doSave=useCallback(()=>{
     setSaving(true);
     const start=Date.now();
-    chrome.storage.local.set({profile,llmConfig:llm},()=>{
+    browser.storage.local.set({profile,llmConfig:llm},()=>{
       const elapsed=Date.now()-start;
       const remaining=Math.max(0,600-elapsed);
       setTimeout(()=>{
@@ -285,7 +285,7 @@ export function OptionsApp(): preact.JSX.Element {
 
   const doParseResume=useCallback(()=>{
     setParseStatus('parsing');setParseError('');
-    chrome.runtime.sendMessage({type:'backend:parseResume'},(r:{success:boolean;data?:{profile:Partial<ProfileData>;tokenUsage:{totalTokens:number;estimatedCostUsd:number}};error?:string})=>{
+    browser.runtime.sendMessage({type:'backend:parseResume'},(r:{success:boolean;data?:{profile:Partial<ProfileData>;tokenUsage:{totalTokens:number;estimatedCostUsd:number}};error?:string})=>{
       if(!r.success||!r.data){setParseStatus('error');setParseError(r.error??'Parsing failed');return}
       const pp=r.data.profile;
       for(const f of PROFILE_FIELDS){

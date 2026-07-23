@@ -189,7 +189,7 @@ function estimateCost(model:string,promptTokens:number,completionTokens:number):
 
 interface LlmConfig{apiUrl:string;apiKey:string;model:string;resume:string;prmExtractAdd:string;prmTailorAdd:string;prmCoverAdd:string;prmScreeningAdd:string;prmQuickAdd:string;prmFormAdd:string;}
 async function getLlmConfig():Promise<LlmConfig>{
-  const r=await chrome.storage.local.get('llmConfig');
+  const r=await browser.storage.local.get('llmConfig');
   const s=r as Record<string,unknown>;
   const c=s['llmConfig'];
   const base={apiUrl:'https://api.deepseek.com/v1',apiKey:'',model:'deepseek-chat',resume:''};
@@ -247,7 +247,7 @@ async function callLlm(prompt:string):Promise<{data:Record<string,unknown>;usage
   let errorBody='';
   if(!resp.ok){
     errorBody=await resp.text().catch(()=>'No body');
-    throw new Error(`LLM API error ${resp.status} from ${cfg.apiUrl}\nKey prefix: ${cfg.apiKey.slice(0,8)}...\nModel: ${cfg.model}\nResponse: ${errorBody.slice(0,1000)}`);
+    throw new Error(`LLM API error ${resp.status} from ${cfg.apiUrl}\nModel: ${cfg.model}\nResponse: ${errorBody.slice(0,1000)}`);
   }
 
   const j=await resp.json() as Record<string,unknown>;
@@ -299,16 +299,16 @@ function composePrompt(base:string,customAdd:string):string{
 // ── Relays ────────────────────────────────────────────────────────────
 
 async function ensureContentScript(tabId:number):Promise<void>{
-  try{await chrome.tabs.sendMessage(tabId,{type:'ping'})}catch{
-    try{await chrome.scripting.executeScript({target:{tabId},files:['content.js']});await new Promise(r=>setTimeout(r,50))}catch{throw new Error('Could not inject content script')}
+  try{await browser.tabs.sendMessage(tabId,{type:'ping'})}catch{
+    try{await browser.scripting.executeScript({target:{tabId},files:['content-scripts/content.js']});await new Promise(r=>setTimeout(r,50))}catch{throw new Error('Could not inject content script')}
   }
 }
 
 async function relayToActiveTab(msg:Record<string,unknown>,sendResponse:(r:unknown)=>void):Promise<void>{
-  const tabs=await chrome.tabs.query({active:true,currentWindow:true});
+  const tabs=await browser.tabs.query({active:true,currentWindow:true});
   const tid=tabs[0]?.id;if(!tid){sendResponse({success:false,error:'No active tab'});return}
   try{await ensureContentScript(tid)}catch(e:unknown){sendResponse({success:false,error:e instanceof Error?e.message:'Unknown'});return}
-  const r=await chrome.tabs.sendMessage(tid,msg);sendResponse(r);
+  const r=await browser.tabs.sendMessage(tid,msg);sendResponse(r);
 }
 
 // ── Focused job-tailor handlers ──────────────────────────────────────
@@ -342,7 +342,7 @@ interface ResolvedJob {
 async function resolveJob(ex:ExtractionPayload,cfg:LlmConfig):Promise<{job:ResolvedJob|null;err?:{error:string;debug:string}}>{
   const cacheKey=`extract:v1:${ex.url}`;
   try{
-    const cached=await chrome.storage.session.get(cacheKey);
+    const cached=await browser.storage.session.get(cacheKey);
     const v=cached?.[cacheKey] as Record<string,unknown>|undefined;
     if(v&&typeof v==='object'&&typeof v['title']==='string'&&(v['title'] as string).length>0&&typeof v['description']==='string'){
       return{job:{
@@ -368,7 +368,7 @@ async function resolveJob(ex:ExtractionPayload,cfg:LlmConfig):Promise<{job:Resol
   }
   if(!title||!description)return{job:null,err:{error:'Could not extract job details from page.',debug:`source=${ex.source} title="${title}" company="${company}" descLen=${description.length}`}};
   const job:ResolvedJob={title,company,location,description,extractionSource:ex.source};
-  try{await chrome.storage.session.set({[cacheKey]:{...job,source:ex.source}})}catch{/* best effort */}
+  try{await browser.storage.session.set({[cacheKey]:{...job,source:ex.source}})}catch{/* best effort */}
   return{job};
 }
 
@@ -442,7 +442,7 @@ async function handleFormMatch(payload:{fields:Array<{id:string;label:string;typ
   if (sourceUrl !== '') {
     try {
       const key = `extract:v1:${sourceUrl}`;
-      const stored = await chrome.storage.session.get(key);
+      const stored = await browser.storage.session.get(key);
       const v = stored?.[key] as Record<string, unknown> | undefined;
       if (v && typeof v === 'object') {
         jobTitle = typeof v['title'] === 'string' ? (v['title'] as string) : '';
@@ -568,7 +568,7 @@ ${cfg.resume.slice(0, 8000)}`;
 
 // ── Router ────────────────────────────────────────────────────────────
 
-chrome.runtime.onMessage.addListener((msg:Record<string,unknown>,_sender:unknown,sendResponse:(r:unknown)=>void):boolean=>{
+browser.runtime.onMessage.addListener((msg:Record<string,unknown>,_sender:unknown,sendResponse:(r:unknown)=>void):boolean=>{
   if(msg['type']==='backend:summary'){handleSummary(msg['payload']as Parameters<typeof handleSummary>[0],sendResponse);return true}
   if(msg['type']==='backend:coverLetter'){handleCoverLetter(msg['payload']as Parameters<typeof handleCoverLetter>[0],sendResponse);return true}
   if(msg['type']==='backend:quickMatch'){handleQuickMatch((msg['payload']as Record<string,unknown>)?.['pageText']as string??'',sendResponse);return true}

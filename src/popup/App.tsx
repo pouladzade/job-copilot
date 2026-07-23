@@ -329,7 +329,7 @@ export function App(): JSX.Element {
   const [replyPrompt, setReplyPrompt] = useState('');
 
   useEffect(() => {
-    chrome.storage.local.get([SK_RESULT, SK_QUICK, SK_FIELDS, SK_MATCHES], (r) => {
+    browser.storage.local.get([SK_RESULT, SK_QUICK, SK_FIELDS, SK_MATCHES], (r) => {
       const s = r as Record<string, unknown>;
       if (s[SK_RESULT]) setState({ phase: 'generated', result: s[SK_RESULT] as GenerationResult });
       else if (s[SK_QUICK]) setState({ phase: 'quick-match', result: s[SK_QUICK] as QuickMatchResult });
@@ -345,29 +345,29 @@ export function App(): JSX.Element {
   }, []);
 
   const clearResult = useCallback(() => {
-    chrome.storage.local.remove([SK_RESULT]);
+    browser.storage.local.remove([SK_RESULT]);
     setState({ phase: 'idle' });
   }, []);
   const clearQuick = useCallback(() => {
-    chrome.storage.local.remove([SK_QUICK]);
+    browser.storage.local.remove([SK_QUICK]);
     setState({ phase: 'idle' });
   }, []);
   const clearReply = useCallback(() => {
-    chrome.storage.local.remove(['lastReply']);
+    browser.storage.local.remove(['lastReply']);
     setState({ phase: 'idle' });
   }, []);
   const clearMatched = useCallback(() => {
-    chrome.storage.local.remove([SK_FIELDS, SK_MATCHES]);
+    browser.storage.local.remove([SK_FIELDS, SK_MATCHES]);
     setState({ phase: 'idle' });
   }, []);
 
   const generate = useCallback((kind: 'summary' | 'coverLetter') => {
     setState({ phase: 'generating', kind });
-    chrome.runtime.sendMessage(
+    browser.runtime.sendMessage(
       { type: 'scrape', kind },
       (r: { success: boolean; data?: unknown; error?: string; details?: string; debug?: string }) => {
-        if (chrome.runtime.lastError) {
-          setState({ phase: 'error', message: chrome.runtime.lastError.message ?? 'Unknown runtime error' });
+        if (browser.runtime.lastError) {
+          setState({ phase: 'error', message: browser.runtime.lastError.message ?? 'Unknown runtime error' });
           return;
         }
         if (!r.success || !r.data) {
@@ -375,7 +375,7 @@ export function App(): JSX.Element {
           return;
         }
         const result = r.data as GenerationResult;
-        chrome.storage.local.set({ [SK_RESULT]: result });
+        browser.storage.local.set({ [SK_RESULT]: result });
         setState({ phase: 'generated', result });
       },
     );
@@ -383,11 +383,11 @@ export function App(): JSX.Element {
 
   const quickMatch = useCallback(() => {
     setState({ phase: 'generating', kind: 'summary' });
-    chrome.runtime.sendMessage(
+    browser.runtime.sendMessage(
       { type: 'scrape', quickMatch: true },
       (r: { success: boolean; data?: unknown; error?: string; details?: string; debug?: string }) => {
-        if (chrome.runtime.lastError) {
-          setState({ phase: 'error', message: chrome.runtime.lastError.message ?? 'Unknown runtime error' });
+        if (browser.runtime.lastError) {
+          setState({ phase: 'error', message: browser.runtime.lastError.message ?? 'Unknown runtime error' });
           return;
         }
         if (!r.success || !r.data) {
@@ -395,7 +395,7 @@ export function App(): JSX.Element {
           return;
         }
         const result = r.data as QuickMatchResult;
-        chrome.storage.local.set({ [SK_QUICK]: result });
+        browser.storage.local.set({ [SK_QUICK]: result });
         setState({ phase: 'quick-match', result });
       },
     );
@@ -404,11 +404,11 @@ export function App(): JSX.Element {
   const craftReply = useCallback(() => {
     if (replyPrompt.trim() === '') return;
     setState({ phase: 'generating', kind: 'summary' });
-    chrome.runtime.sendMessage(
+    browser.runtime.sendMessage(
       { type: 'scrape', reply: true, replyPrompt },
       (r: { success: boolean; data?: unknown; error?: string; details?: string; debug?: string }) => {
-        if (chrome.runtime.lastError) {
-          setState({ phase: 'error', message: chrome.runtime.lastError.message ?? 'Unknown runtime error' });
+        if (browser.runtime.lastError) {
+          setState({ phase: 'error', message: browser.runtime.lastError.message ?? 'Unknown runtime error' });
           return;
         }
         if (!r.success || !r.data) {
@@ -416,7 +416,7 @@ export function App(): JSX.Element {
           return;
         }
         const result = r.data as ReplyResult;
-        chrome.storage.local.set({ lastReply: result });
+        browser.storage.local.set({ lastReply: result });
         setState({ phase: 'reply', result });
       },
     );
@@ -427,11 +427,11 @@ export function App(): JSX.Element {
     (async () => {
       try {
         const fr = await new Promise<{ readonly fields: readonly FormField[] }>((res, rej) => {
-          chrome.runtime.sendMessage(
+          browser.runtime.sendMessage(
             { type: 'scrapeFormFields' },
             (r: { fields?: readonly FormField[]; fieldCount?: number; error?: string }) => {
-              if (chrome.runtime.lastError) {
-                rej(new Error(chrome.runtime.lastError.message));
+              if (browser.runtime.lastError) {
+                rej(new Error(browser.runtime.lastError.message));
                 return;
               }
               if (r.fields && r.fields.length > 0) {
@@ -446,7 +446,7 @@ export function App(): JSX.Element {
 
         const mr = await new Promise<{ readonly values: readonly MatchedField[]; readonly unmatched: readonly string[] }>(
           (res, rej) => {
-            chrome.runtime.sendMessage(
+            browser.runtime.sendMessage(
               {
                 type: 'backend:matchFormFields',
                 payload: {
@@ -461,8 +461,8 @@ export function App(): JSX.Element {
                 },
               },
               (r: { success: boolean; data?: { values: readonly MatchedField[]; unmatched: readonly string[] }; error?: string }) => {
-                if (chrome.runtime.lastError) {
-                  rej(new Error(chrome.runtime.lastError.message));
+                if (browser.runtime.lastError) {
+                  rej(new Error(browser.runtime.lastError.message));
                   return;
                 }
                 if (!r.success || !r.data) {
@@ -474,7 +474,7 @@ export function App(): JSX.Element {
             );
           },
         );
-        chrome.storage.local.set({ [SK_FIELDS]: fields, [SK_MATCHES]: mr.values });
+        browser.storage.local.set({ [SK_FIELDS]: fields, [SK_MATCHES]: mr.values });
         setState({ phase: 'matched', fields, matches: mr.values, unmatched: mr.unmatched });
       } catch (e: unknown) {
         setState({
@@ -488,7 +488,7 @@ export function App(): JSX.Element {
 
   const inject = useCallback(() => {
     if (state.phase !== 'matched') return;
-    chrome.runtime.sendMessage(
+    browser.runtime.sendMessage(
       {
         type: 'fillFormMatched',
         matches: state.matches.map((m: MatchedField) => ({ fieldId: m.fieldId, value: m.value })),
@@ -572,7 +572,7 @@ function LinkedInSearchBar(): JSX.Element {
   const [selected, setSelected] = useState('');
 
   useEffect(() => {
-    chrome.storage.local.get(['linkedInSearchPresets'], (result) => {
+    browser.storage.local.get(['linkedInSearchPresets'], (result) => {
       const stored = result['linkedInSearchPresets'] as unknown;
       if (Array.isArray(stored)) {
         const typed: Preset[] = stored.filter(
@@ -595,7 +595,7 @@ function LinkedInSearchBar(): JSX.Element {
     if (preset === undefined) return;
 
     const url = buildLinkedInSearchUrl(preset.config);
-    chrome.tabs.create({ url });
+    browser.tabs.create({ url });
   }, [selected, presets]);
 
   return (

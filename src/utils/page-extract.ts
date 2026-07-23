@@ -173,7 +173,7 @@ export function extractWithTreeWalker(doc: Document): string {
 export async function getCachedExtraction(url: string): Promise<ExtractionResult | null> {
   try {
     const key = cacheKey(url);
-    const stored = await chrome.storage.session.get(key);
+    const stored = await browser.storage.session.get(key);
     const v = stored?.[key];
     if (v && typeof v === 'object') return v as ExtractionResult;
   } catch { /* fall through */ }
@@ -182,7 +182,7 @@ export async function getCachedExtraction(url: string): Promise<ExtractionResult
 
 export async function setCachedExtraction(result: ExtractionResult): Promise<void> {
   try {
-    await chrome.storage.session.set({ [cacheKey(result.url)]: result });
+    await browser.storage.session.set({ [cacheKey(result.url)]: result });
   } catch { /* quota errors must not break extraction */ }
 }
 
