@@ -20,7 +20,7 @@ interface ScrapeErrorResponse { readonly success: false; readonly error: string;
 type ScrapeResponse = ScrapeSuccessResponse | ScrapeErrorResponse;
 
 interface ScrapeFormFieldsResponse {
-  readonly fields: ReadonlyArray<{ readonly id: string; readonly label: string; readonly type: string; readonly maxLength: number; readonly options: readonly string[] }>;
+  readonly fields: readonly { readonly id: string; readonly label: string; readonly type: string; readonly maxLength: number; readonly options: readonly string[] }[];
   readonly fieldCount: number;
   readonly debug?: string;
 }
@@ -28,17 +28,17 @@ interface FillMatchedResponse { readonly filled: number; readonly unmatched: num
 interface RevertResponse { readonly reverted: number; }
 
 browser.runtime.onMessage.addListener(
-  (message: { readonly type: 'ping' | 'scrape' | 'fillForm' | 'scrapeFormFields' | 'fillFormMatched' | 'revertForm'; readonly answers?: ReadonlyArray<{ readonly label: string; readonly value: string }>; readonly matches?: ReadonlyArray<FormMatchValue>; readonly kind?: 'summary' | 'coverLetter'; readonly quickMatch?: boolean }, _sender, sendResponse: (response: ScrapeResponse | { readonly filled: number } | { readonly pong: true } | ScrapeFormFieldsResponse | FillMatchedResponse | RevertResponse) => void): boolean => {
+  (message: { readonly type: 'ping' | 'scrape' | 'fillForm' | 'scrapeFormFields' | 'fillFormMatched' | 'revertForm'; readonly answers?: readonly { readonly label: string; readonly value: string }[]; readonly matches?: readonly FormMatchValue[]; readonly kind?: 'summary' | 'coverLetter'; readonly quickMatch?: boolean }, _sender, sendResponse: (response: ScrapeResponse | { readonly filled: number } | { readonly pong: true } | ScrapeFormFieldsResponse | FillMatchedResponse | RevertResponse) => void): boolean => {
     if (message.type === 'ping') { sendResponse({ pong: true }); return false; }
     if (message.type === 'scrape') {
       const m = message as Record<string, unknown>;
-      handleScrape(sendResponse as (r: ScrapeResponse) => void, m['kind'] as 'summary' | 'coverLetter' | undefined, m['quickMatch'] as boolean, m['reply'] as boolean, m['replyPrompt'] as string);
+      handleScrape(sendResponse, m.kind as 'summary' | 'coverLetter' | undefined, m.quickMatch as boolean, m.reply as boolean, m.replyPrompt as string);
       return true;
     }
-    if (message.type === 'fillForm') { handleFillForm(message.answers ?? [], sendResponse as (r: { readonly filled: number }) => void); return true; }
-    if (message.type === 'scrapeFormFields') { handleScrapeFormFields(sendResponse as (r: ScrapeFormFieldsResponse) => void); return true; }
-    if (message.type === 'fillFormMatched') { handleFillFormMatched(message.matches ?? [], sendResponse as (r: FillMatchedResponse) => void); return true; }
-    if (message.type === 'revertForm') { handleRevertForm(sendResponse as (r: RevertResponse) => void); return true; }
+    if (message.type === 'fillForm') { handleFillForm(message.answers ?? [], sendResponse); return true; }
+    if (message.type === 'scrapeFormFields') { handleScrapeFormFields(sendResponse); return true; }
+    if (message.type === 'fillFormMatched') { handleFillFormMatched(message.matches ?? [], sendResponse); return true; }
+    if (message.type === 'revertForm') { handleRevertForm(sendResponse); return true; }
     return false;
   },
 );
@@ -82,7 +82,7 @@ async function handleScrape(sendResponse: (response: ScrapeResponse) => void, ki
   });
 }
 
-function handleFillForm(answers: ReadonlyArray<{ readonly label: string; readonly value: string }>, sendResponse: (response: { readonly filled: number }) => void): void {
+function handleFillForm(answers: readonly { readonly label: string; readonly value: string }[], sendResponse: (response: { readonly filled: number }) => void): void {
   const r = scrapeFormFieldsWithMap(); setActiveSelectorMap(r.selectorMap);
   let filled = 0;
   for (const a of answers) { const f = r.fields.find((x) => x.label.toLowerCase() === a.label.toLowerCase()); if (f) { fillField(f, a.value); filled++; } }
@@ -95,7 +95,7 @@ function handleScrapeFormFields(sendResponse: (response: ScrapeFormFieldsRespons
   sendResponse({ fields, fieldCount: fields.length, debug: r.debug });
 }
 
-function handleFillFormMatched(matches: ReadonlyArray<FormMatchValue>, sendResponse: (response: FillMatchedResponse) => void): void {
+function handleFillFormMatched(matches: readonly FormMatchValue[], sendResponse: (response: FillMatchedResponse) => void): void {
   const r = scrapeFormFieldsWithMap(); setActiveSelectorMap(r.selectorMap);
   let filled = 0; let unmatched = 0;
   for (const m of matches) { const f = r.fields.find((x) => x.id === m.fieldId); if (f) { fillField(f, m.value); filled++; } else { unmatched++; } }

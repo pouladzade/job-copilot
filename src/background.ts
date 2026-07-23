@@ -191,22 +191,22 @@ interface LlmConfig{apiUrl:string;apiKey:string;model:string;resume:string;prmEx
 async function getLlmConfig():Promise<LlmConfig>{
   const r=await browser.storage.local.get('llmConfig');
   const s=r as Record<string,unknown>;
-  const c=s['llmConfig'];
+  const c=s.llmConfig;
   const base={apiUrl:'https://api.deepseek.com/v1',apiKey:'',model:'deepseek-chat',resume:''};
   const adds={prmExtractAdd:'',prmTailorAdd:'',prmCoverAdd:'',prmScreeningAdd:'',prmQuickAdd:'',prmFormAdd:''};
   if(c&&typeof c==='object'&&c!==null){
     const obj=c as Record<string,unknown>;
     return{
-      apiUrl:typeof obj['apiUrl']==='string'?obj['apiUrl']:base.apiUrl,
-      apiKey:typeof obj['apiKey']==='string'?obj['apiKey']:base.apiKey,
-      model:typeof obj['model']==='string'?obj['model']:base.model,
-      resume:typeof obj['resume']==='string'?obj['resume']:base.resume,
-      prmExtractAdd:typeof obj['prmExtractAdd']==='string'?obj['prmExtractAdd']:adds.prmExtractAdd,
-      prmTailorAdd:typeof obj['prmTailorAdd']==='string'?obj['prmTailorAdd']:adds.prmTailorAdd,
-      prmCoverAdd:typeof obj['prmCoverAdd']==='string'?obj['prmCoverAdd']:adds.prmCoverAdd,
-      prmScreeningAdd:typeof obj['prmScreeningAdd']==='string'?obj['prmScreeningAdd']:adds.prmScreeningAdd,
-      prmQuickAdd:typeof obj['prmQuickAdd']==='string'?obj['prmQuickAdd']:adds.prmQuickAdd,
-      prmFormAdd:typeof obj['prmFormAdd']==='string'?obj['prmFormAdd']:adds.prmFormAdd,
+      apiUrl:typeof obj.apiUrl==='string'?obj.apiUrl:base.apiUrl,
+      apiKey:typeof obj.apiKey==='string'?obj.apiKey:base.apiKey,
+      model:typeof obj.model==='string'?obj.model:base.model,
+      resume:typeof obj.resume==='string'?obj.resume:base.resume,
+      prmExtractAdd:typeof obj.prmExtractAdd==='string'?obj.prmExtractAdd:adds.prmExtractAdd,
+      prmTailorAdd:typeof obj.prmTailorAdd==='string'?obj.prmTailorAdd:adds.prmTailorAdd,
+      prmCoverAdd:typeof obj.prmCoverAdd==='string'?obj.prmCoverAdd:adds.prmCoverAdd,
+      prmScreeningAdd:typeof obj.prmScreeningAdd==='string'?obj.prmScreeningAdd:adds.prmScreeningAdd,
+      prmQuickAdd:typeof obj.prmQuickAdd==='string'?obj.prmQuickAdd:adds.prmQuickAdd,
+      prmFormAdd:typeof obj.prmFormAdd==='string'?obj.prmFormAdd:adds.prmFormAdd,
     };
   }
   return{...base,...adds};
@@ -224,7 +224,7 @@ async function callLlm(prompt:string):Promise<{data:Record<string,unknown>;usage
   if(!local&&cfg.apiKey==='')return Promise.reject(new Error('LLM API key not configured. Go to Options (right-click extension → Options).'));
 
   const headers:Record<string,string>={'Content-Type':'application/json'};
-  if(!local)headers['Authorization']=`Bearer ${cfg.apiKey}`;
+  if(!local)headers.Authorization=`Bearer ${cfg.apiKey}`;
 
   const bodyObj:Record<string,unknown>={
     model:cfg.model,
@@ -234,9 +234,9 @@ async function callLlm(prompt:string):Promise<{data:Record<string,unknown>;usage
   };
 
   // Ollama/open-webui don't support response_format
-  if(!local)bodyObj['response_format']={type:'json_object'};
+  if(!local)bodyObj.response_format={type:'json_object'};
   // For Ollama, add format instruction to the prompt itself instead
-  if(local)bodyObj['messages']=[{role:'user',content:prompt+'\n\nIMPORTANT: Return ONLY valid JSON. No markdown fences, no extra text.'}];
+  if(local)bodyObj.messages=[{role:'user',content:prompt+'\n\nIMPORTANT: Return ONLY valid JSON. No markdown fences, no extra text.'}];
 
   const resp=await fetch(`${cfg.apiUrl}/chat/completions`,{
     method:'POST',
@@ -251,13 +251,13 @@ async function callLlm(prompt:string):Promise<{data:Record<string,unknown>;usage
   }
 
   const j=await resp.json() as Record<string,unknown>;
-  const usage=j['usage']as Record<string,number>|undefined;
-  const pt=usage?.['prompt_tokens']??0;
-  const ct=usage?.['completion_tokens']??0;
-  const tt=usage?.['total_tokens']??0;
+  const usage=j.usage as Record<string,number>|undefined;
+  const pt=usage?.prompt_tokens??0;
+  const ct=usage?.completion_tokens??0;
+  const tt=usage?.total_tokens??0;
   const cost=local?0:estimateCost(cfg.model,pt,ct);
 
-  const choices=j['choices']as Array<{message:{content:string}}>|undefined;
+  const choices=j.choices as {message:{content:string}}[]|undefined;
   let content=choices?.[0]?.message?.content??'{}';
 
   // Ollama sometimes wraps in markdown fences
@@ -344,13 +344,13 @@ async function resolveJob(ex:ExtractionPayload,cfg:LlmConfig):Promise<{job:Resol
   try{
     const cached=await browser.storage.session.get(cacheKey);
     const v=cached?.[cacheKey] as Record<string,unknown>|undefined;
-    if(v&&typeof v==='object'&&typeof v['title']==='string'&&(v['title'] as string).length>0&&typeof v['description']==='string'){
+    if(v&&typeof v==='object'&&typeof v.title==='string'&&(v.title).length>0&&typeof v.description==='string'){
       return{job:{
-        title:v['title'] as string,
-        company:typeof v['company']==='string'?v['company'] as string:'',
-        location:typeof v['location']==='string'?v['location'] as string:'',
-        description:v['description'] as string,
-        extractionSource:typeof v['source']==='string'?v['source'] as ExtractionPayload['source']:ex.source,
+        title:v.title,
+        company:typeof v.company==='string'?v.company:'',
+        location:typeof v.location==='string'?v.location:'',
+        description:v.description,
+        extractionSource:typeof v.source==='string'?v.source as ExtractionPayload['source']:ex.source,
       }};
     }
   }catch{/* fall through */}
@@ -361,10 +361,10 @@ async function resolveJob(ex:ExtractionPayload,cfg:LlmConfig):Promise<{job:Resol
     title=ex.title;company=ex.company;location=ex.location;description=ex.description;
   }else{
     const extr=await callLlm(composePrompt(DEFAULT_PROMPTS.prmExtract,cfg.prmExtractAdd).replace('{{pageText}}',ex.rawText.slice(0,30000)));
-    title=typeof extr.data['title']==='string'?extr.data['title']:'';
-    company=typeof extr.data['company']==='string'?extr.data['company']:'';
-    location=typeof extr.data['location']==='string'?extr.data['location']:'';
-    description=typeof extr.data['description']==='string'?extr.data['description']:'';
+    title=typeof extr.data.title==='string'?extr.data.title:'';
+    company=typeof extr.data.company==='string'?extr.data.company:'';
+    location=typeof extr.data.location==='string'?extr.data.location:'';
+    description=typeof extr.data.description==='string'?extr.data.description:'';
   }
   if(!title||!description)return{job:null,err:{error:'Could not extract job details from page.',debug:`source=${ex.source} title="${title}" company="${company}" descLen=${description.length}`}};
   const job:ResolvedJob={title,company,location,description,extractionSource:ex.source};
@@ -380,12 +380,12 @@ async function handleSummary(payload:{extraction:ExtractionPayload},sendResponse
     const{job,err}=await resolveJob(payload.extraction,cfg);
     if(!job){sendResponse({success:false,...(err??{error:'No job data',debug:''})});return}
     const r=await callLlm(composePrompt(DEFAULT_PROMPTS.prmTailor,cfg.prmTailorAdd).replace('{{jobDescription}}',job.description).replace('{{resumeContent}}',cfg.resume));
-    const summary=typeof r.data['resumeSummary']==='string'?r.data['resumeSummary']:'';
+    const summary=typeof r.data.resumeSummary==='string'?r.data.resumeSummary:'';
     if(summary===''){sendResponse({success:false,error:'Model returned an empty summary.'});return}
     sendResponse({success:true,data:{
       kind:'summary' as const,
       title:job.title,company:job.company,location:job.location,
-      summary,confidence:typeof r.data['confidence']==='number'?r.data['confidence']:null,
+      summary,confidence:typeof r.data.confidence==='number'?r.data.confidence:null,
       tokenUsage:r.usage,
     }});
   }catch(e:unknown){
@@ -401,12 +401,12 @@ async function handleCoverLetter(payload:{extraction:ExtractionPayload},sendResp
     const{job,err}=await resolveJob(payload.extraction,cfg);
     if(!job){sendResponse({success:false,...(err??{error:'No job data',debug:''})});return}
     const r=await callLlm(composePrompt(DEFAULT_PROMPTS.prmCover,cfg.prmCoverAdd).replace('{{jobDescription}}',job.description).replace('{{resumeContent}}',cfg.resume));
-    const cover=typeof r.data['coverLetter']==='string'?r.data['coverLetter']:'';
+    const cover=typeof r.data.coverLetter==='string'?r.data.coverLetter:'';
     if(cover===''){sendResponse({success:false,error:'Model returned an empty cover letter.'});return}
     sendResponse({success:true,data:{
       kind:'coverLetter' as const,
       title:job.title,company:job.company,location:job.location,
-      coverLetter:cover,confidence:typeof r.data['confidence']==='number'?r.data['confidence']:null,
+      coverLetter:cover,confidence:typeof r.data.confidence==='number'?r.data.confidence:null,
       tokenUsage:r.usage,
     }});
   }catch(e:unknown){
@@ -421,15 +421,15 @@ async function handleQuickMatch(pageText:string,sendResponse:(r:unknown)=>void):
   try{
     const r=await callLlm(composePrompt(DEFAULT_PROMPTS.prmQuick,cfg.prmQuickAdd).replace('{{jobDescription}}',pageText.slice(0,10000)).replace('{{resumeContent}}',cfg.resume));
     sendResponse({success:true,data:{
-      score:typeof r.data['score']==='number'?r.data['score']:5,
-      verdict:typeof r.data['verdict']==='string'?r.data['verdict']:'Moderate Match',
-      reasons:Array.isArray(r.data['reasons'])?r.data['reasons'].filter((x:unknown):x is string=>typeof x==='string'):[],
+      score:typeof r.data.score==='number'?r.data.score:5,
+      verdict:typeof r.data.verdict==='string'?r.data.verdict:'Moderate Match',
+      reasons:Array.isArray(r.data.reasons)?r.data.reasons.filter((x:unknown):x is string=>typeof x==='string'):[],
       tokenUsage:r.usage,
     }});
   }catch(e:unknown){sendResponse({success:false,error:e instanceof Error?e.message:'Quick match failed'})}
 }
 
-async function handleFormMatch(payload:{fields:Array<{id:string;label:string;type:string;maxLength:number;options:readonly string[]}>;sourceUrl?:string},sendResponse:(r:unknown)=>void):Promise<void>{
+async function handleFormMatch(payload:{fields:{id:string;label:string;type:string;maxLength:number;options:readonly string[]}[];sourceUrl?:string},sendResponse:(r:unknown)=>void):Promise<void>{
   const fields = payload.fields;
   const sourceUrl = payload.sourceUrl ?? '';
   const cfg=await getLlmConfig();
@@ -438,23 +438,21 @@ async function handleFormMatch(payload:{fields:Array<{id:string;label:string;typ
 
   let jobTitle = '';
   let jobCompany = '';
-  let jobDescription = '';
   if (sourceUrl !== '') {
     try {
       const key = `extract:v1:${sourceUrl}`;
       const stored = await browser.storage.session.get(key);
       const v = stored?.[key] as Record<string, unknown> | undefined;
       if (v && typeof v === 'object') {
-        jobTitle = typeof v['title'] === 'string' ? (v['title'] as string) : '';
-        jobCompany = typeof v['company'] === 'string' ? (v['company'] as string) : '';
-        jobDescription = typeof v['description'] === 'string' ? (v['description'] as string) : '';
+        jobTitle = typeof v.title === 'string' ? (v.title) : '';
+        jobCompany = typeof v.company === 'string' ? (v.company) : '';
       }
     } catch { /* fall through */ }
   }
 
-  const values:Array<{fieldId:string;value:string;confidence:number;source:'profile'|'llm'}> = [];
+  const values:{fieldId:string;value:string;confidence:number;source:'profile'|'llm'}[] = [];
   const unmatched: string[] = [];
-  const llmFields: Array<{id:string;label:string;type:string;maxLength:number;options:readonly string[]}> = [];
+  const llmFields: {id:string;label:string;type:string;maxLength:number;options:readonly string[]}[] = [];
 
   for (const f of fields) {
     const det = deterministicMatch(f.label, profile);
@@ -478,13 +476,13 @@ async function handleFormMatch(payload:{fields:Array<{id:string;label:string;typ
     try {
       const ctx = `## Candidate Profile\n${profileToContext(profile)}\n\n## Job\nTitle: ${jobTitle}\nCompany: ${jobCompany}\nPage URL: ${sourceUrl}\n\n## Resume\n${cfg.resume.slice(0, 3000)}`;
       const r = await callLlm(composePrompt(DEFAULT_PROMPTS.prmForm,cfg.prmFormAdd).replace('{{candidateContext}}',ctx).replace('{{fieldsJson}}',JSON.stringify(llmFields, null, 2)));
-      const valuesRaw = r.data['values'];
+      const valuesRaw = r.data.values;
       if (Array.isArray(valuesRaw)) {
         for (const item of valuesRaw) {
           const o = item as Record<string, unknown>;
-          const fid = typeof o['fieldId'] === 'string' ? o['fieldId'] : '';
-          const val = typeof o['value'] === 'string' ? o['value'] : '';
-          const conf = typeof o['confidence'] === 'number' ? o['confidence'] : 0.5;
+          const fid = typeof o.fieldId === 'string' ? o.fieldId : '';
+          const val = typeof o.value === 'string' ? o.value : '';
+          const conf = typeof o.confidence === 'number' ? o.confidence : 0.5;
           if (fid !== '' && val !== '') {
             const target = llmFields.find((x) => x.id === fid);
             if (target?.type === 'select' && target.options.length > 0) {
@@ -498,10 +496,10 @@ async function handleFormMatch(payload:{fields:Array<{id:string;label:string;typ
           }
         }
       }
-      const unmatchedRaw = r.data['unmatched'];
+      const unmatchedRaw = r.data.unmatched;
       const llmUnmatched: string[] = Array.isArray(unmatchedRaw) ? unmatchedRaw.filter((x: unknown): x is string => typeof x === 'string') : [];
       for (const fid of llmUnmatched) if (!unmatched.includes(fid)) unmatched.push(fid);
-    } catch (e: unknown) {
+    } catch (_e: unknown) {
       for (const f of llmFields) if (!unmatched.includes(f.id)) unmatched.push(f.id);
     }
   }
@@ -520,12 +518,12 @@ async function handleReply(pageText:string,replyPrompt:string,sendResponse:(r:un
   try{
     const prompt=`## System\nYou are a professional message reply assistant. Write a brief, articulate reply based on the user's intent and their resume context. Keep it concise and natural.\n## User's Intent\n${replyPrompt}\n## Page Context (conversation/message)\n${pageText.slice(0,5000)}\n## Resume\n${cfg.resume.slice(0,2000)}\n\nReturn ONLY valid JSON:\n{"reply":"string"}`;
     const r=await callLlm(prompt);
-    let reply=typeof r.data['reply']==='string'?r.data['reply']:'';
+    let reply=typeof r.data.reply==='string'?r.data.reply:'';
     // Fallback: local models may use different keys
-    if(reply==='')reply=typeof r.data['response']==='string'?r.data['response']:'';
-    if(reply==='')reply=typeof r.data['message']==='string'?r.data['message']:'';
-    if(reply==='')reply=typeof r.data['content']==='string'?r.data['content']:'';
-    if(reply==='')reply=typeof r.data['text']==='string'?r.data['text']:'';
+    if(reply==='')reply=typeof r.data.response==='string'?r.data.response:'';
+    if(reply==='')reply=typeof r.data.message==='string'?r.data.message:'';
+    if(reply==='')reply=typeof r.data.content==='string'?r.data.content:'';
+    if(reply==='')reply=typeof r.data.text==='string'?r.data.text:'';
     sendResponse({success:true,data:{reply,tokenUsage:r.usage}});
   }catch(e:unknown){sendResponse({success:false,error:e instanceof Error?e.message:'Reply generation failed'})}
 }
@@ -569,16 +567,16 @@ ${cfg.resume.slice(0, 8000)}`;
 // ── Router ────────────────────────────────────────────────────────────
 
 browser.runtime.onMessage.addListener((msg:Record<string,unknown>,_sender:unknown,sendResponse:(r:unknown)=>void):boolean=>{
-  if(msg['type']==='backend:summary'){handleSummary(msg['payload']as Parameters<typeof handleSummary>[0],sendResponse);return true}
-  if(msg['type']==='backend:coverLetter'){handleCoverLetter(msg['payload']as Parameters<typeof handleCoverLetter>[0],sendResponse);return true}
-  if(msg['type']==='backend:quickMatch'){handleQuickMatch((msg['payload']as Record<string,unknown>)?.['pageText']as string??'',sendResponse);return true}
-  if(msg['type']==='backend:matchFormFields'){handleFormMatch(msg['payload']as Parameters<typeof handleFormMatch>[0],sendResponse);return true}
-  if(msg['type']==='backend:reply'){handleReply((msg['payload']as Record<string,unknown>)?.['pageText']as string??'',(msg['payload']as Record<string,unknown>)?.['replyPrompt']as string??'',sendResponse);return true}
-  if(msg['type']==='backend:parseResume'){handleParseResume(sendResponse);return true}
-  if(msg['type']==='scrape'){relayToActiveTab({type:'scrape',kind:msg['kind'],quickMatch:msg['quickMatch'],reply:msg['reply'],replyPrompt:msg['replyPrompt']},sendResponse);return true}
-  if(msg['type']==='scrapeFormFields'){relayToActiveTab({type:'scrapeFormFields'},sendResponse);return true}
-  if(msg['type']==='fillForm'){relayToActiveTab({type:'fillForm',answers:msg['answers']},sendResponse);return true}
-  if(msg['type']==='fillFormMatched'){relayToActiveTab({type:'fillFormMatched',matches:msg['matches']},sendResponse);return true}
-  if(msg['type']==='revertForm'){relayToActiveTab({type:'revertForm'},sendResponse);return true}
+  if(msg.type==='backend:summary'){handleSummary(msg.payload as Parameters<typeof handleSummary>[0],sendResponse);return true}
+  if(msg.type==='backend:coverLetter'){handleCoverLetter(msg.payload as Parameters<typeof handleCoverLetter>[0],sendResponse);return true}
+  if(msg.type==='backend:quickMatch'){handleQuickMatch((msg.payload as Record<string,unknown>)?.pageText as string??'',sendResponse);return true}
+  if(msg.type==='backend:matchFormFields'){handleFormMatch(msg.payload as Parameters<typeof handleFormMatch>[0],sendResponse);return true}
+  if(msg.type==='backend:reply'){handleReply((msg.payload as Record<string,unknown>)?.pageText as string??'',(msg.payload as Record<string,unknown>)?.replyPrompt as string??'',sendResponse);return true}
+  if(msg.type==='backend:parseResume'){handleParseResume(sendResponse);return true}
+  if(msg.type==='scrape'){relayToActiveTab({type:'scrape',kind:msg.kind,quickMatch:msg.quickMatch,reply:msg.reply,replyPrompt:msg.replyPrompt},sendResponse);return true}
+  if(msg.type==='scrapeFormFields'){relayToActiveTab({type:'scrapeFormFields'},sendResponse);return true}
+  if(msg.type==='fillForm'){relayToActiveTab({type:'fillForm',answers:msg.answers},sendResponse);return true}
+  if(msg.type==='fillFormMatched'){relayToActiveTab({type:'fillFormMatched',matches:msg.matches},sendResponse);return true}
+  if(msg.type==='revertForm'){relayToActiveTab({type:'revertForm'},sendResponse);return true}
   return false;
 });

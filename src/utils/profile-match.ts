@@ -26,7 +26,7 @@ export function profileToContext(p: Profile): string {
   const lines: string[] = [];
   const push = (k: string, v: unknown): void => {
     if (v === undefined || v === null || v === '') return;
-    lines.push(`${k}: ${v}`);
+    lines.push(`${k}: ${typeof v === "string" ? v : JSON.stringify(v)}`);
   };
   push('Full Name', p.fullName);
   push('Email', p.contactEmail);
@@ -57,8 +57,8 @@ export function deterministicMatch(label: string, profile: Profile): { value: st
   if (/\bemail\b|\be[\s-]?mail\b/.test(l) && profile.contactEmail) return { value: profile.contactEmail, confidence: 0.95 };
   if (/\bphone\b|\btel(?:ephone)?\b|\bmobile\b/.test(l) && profile.contactPhone) return { value: profile.contactPhone, confidence: 0.95 };
   if (/full[\s_-]?name|your[\s_-]?name|applicant[\s_-]?name|(?:^|\b)name(?:\b|$)/i.test(l) && profile.fullName) return { value: profile.fullName, confidence: 0.95 };
-  if (/linkedin/.test(l) && profile.linkedin) return { value: profile.linkedin, confidence: 0.95 };
-  if (/github/.test(l) && profile.githubUrl) return { value: profile.githubUrl, confidence: 0.95 };
+  if (l.includes('linkedin') && profile.linkedin) return { value: profile.linkedin, confidence: 0.95 };
+  if (l.includes('github') && profile.githubUrl) return { value: profile.githubUrl, confidence: 0.95 };
   if (/portfolio|website|personal[\s_-]?url/.test(l) && profile.portfolioUrl) return { value: profile.portfolioUrl, confidence: 0.95 };
   if (/city|\blocation\b|currently[\s_-]?(?:located|based)/.test(l) && profile.city) return { value: profile.city, confidence: 0.85 };
   if (/state|region|province/.test(l) && profile.state) return { value: profile.state, confidence: 0.85 };
@@ -68,7 +68,7 @@ export function deterministicMatch(label: string, profile: Profile): { value: st
   if (workAuth && workContext && profile.workAuthorization) return { value: profile.workAuthorization, confidence: 0.9 };
   if (/notice[\s_-]?period/.test(l) && profile.noticePeriod) return { value: profile.noticePeriod, confidence: 0.9 };
   if (/salary|compensation|expectation/.test(l) && profile.salaryExpectations) return { value: profile.salaryExpectations, confidence: 0.9 };
-  if (/relocate/.test(l) && profile.willingToRelocate) return { value: profile.willingToRelocate, confidence: 0.9 };
+  if (l.includes('relocate') && profile.willingToRelocate) return { value: profile.willingToRelocate, confidence: 0.9 };
   if (/years?(?:[\s_-]?of)?[\s_-]?experience/.test(l) && typeof profile.yearsOfExperience === 'number' && profile.yearsOfExperience > 0) return { value: String(profile.yearsOfExperience), confidence: 0.9 };
   if (/current[\s_-]?(?:job[\s_-]?)?title/.test(l) && profile.currentTitle) return { value: profile.currentTitle, confidence: 0.85 };
   if (/current[\s_-]?(?:employer|company)/.test(l) && profile.currentCompany) return { value: profile.currentCompany, confidence: 0.85 };
@@ -83,8 +83,8 @@ export async function getProfile(): Promise<Profile> {
   try {
     const r = await browser.storage.local.get('profile');
     const s = r as Record<string, unknown>;
-    const p = s['profile'];
-    if (p && typeof p === 'object' && p !== null) return p as Profile;
+    const p = s.profile;
+    if (p && typeof p === 'object' && p !== null) return p;
   } catch { /* fall through */ }
   return {};
 }

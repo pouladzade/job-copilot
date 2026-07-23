@@ -198,7 +198,7 @@ function ErrorPanel(p: {
         {p.state.debug && (
           <div>
             <button
-              onClick={() => setDbg(!dbg)}
+              onClick={() => { setDbg(!dbg); }}
               style={{
                 marginTop: '8px',
                 padding: '4px 10px',
@@ -293,7 +293,7 @@ function CopyButton(p: { readonly text: string; readonly label?: string }): JSX.
   const copy = useCallback(async () => {
     if (await copyToClipboard(p.text)) {
       setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
+      setTimeout(() => { setCopied(false); }, 1800);
     }
   }, [p.text]);
 
@@ -508,8 +508,8 @@ export function App(): JSX.Element {
                 <IdlePanel
                   replyPrompt={replyPrompt}
                   onReplyChange={setReplyPrompt}
-                  onSummary={() => generate('summary')}
-                  onCover={() => generate('coverLetter')}
+                  onSummary={() => { generate('summary'); }}
+                  onCover={() => { generate('coverLetter'); }}
                   onQuickMatch={quickMatch}
                   onFillOnly={fillFormOnly}
                   onReply={craftReply}
@@ -526,12 +526,12 @@ export function App(): JSX.Element {
                 />
               );
             case 'error':
-              return <ErrorPanel state={state} onRetry={() => setState({ phase: 'idle' })} />;
+              return <ErrorPanel state={state} onRetry={() => { setState({ phase: 'idle' }); }} />;
             case 'generated':
               return (
                 <GeneratedPanel
                   result={state.result}
-                  onRegen={() => generate(state.result.kind)}
+                  onRegen={() => { generate(state.result.kind); }}
                   onClear={clearResult}
                 />
               );
@@ -568,12 +568,12 @@ interface Preset {
 }
 
 function LinkedInSearchBar(): JSX.Element {
-  const [presets, setPresets] = useState<ReadonlyArray<Preset>>([]);
+  const [presets, setPresets] = useState<readonly Preset[]>([]);
   const [selected, setSelected] = useState('');
 
   useEffect(() => {
     browser.storage.local.get(['linkedInSearchPresets'], (result) => {
-      const stored = result['linkedInSearchPresets'] as unknown;
+      const stored = result.linkedInSearchPresets;
       if (Array.isArray(stored)) {
         const typed: Preset[] = stored.filter(
           (p): p is Preset =>
@@ -613,7 +613,7 @@ function LinkedInSearchBar(): JSX.Element {
     >
       <select
         value={selected}
-        onChange={(e) => setSelected((e.target as HTMLSelectElement).value)}
+        onChange={(e) => { setSelected((e.target as HTMLSelectElement).value); }}
         style={{
           flex: 1,
           padding: '6px 8px',
@@ -765,7 +765,7 @@ function IdlePanel(p: {
         </div>
         <textarea
           value={p.replyPrompt}
-          onInput={(e) => p.onReplyChange((e.target as HTMLTextAreaElement).value)}
+          onInput={(e) => { p.onReplyChange((e.target as HTMLTextAreaElement).value); }}
           placeholder={`What should the reply say? (e.g. "I'm interested but my salary expectation is 90k")`}
           style={{
             width: '100%',
@@ -1210,4 +1210,4 @@ function MatchedPanel(p: {
   );
 }
 
-render(<App />, document.getElementById('app') as HTMLElement);
+render(<App />, document.getElementById('app')!);

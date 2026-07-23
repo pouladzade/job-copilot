@@ -3,5 +3,5 @@
 // mirrors the Chrome API surface. For `tsc --noEmit`, we declare
 // `browser` as a type alias of the Chrome namespace.
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 declare const browser: typeof chrome;

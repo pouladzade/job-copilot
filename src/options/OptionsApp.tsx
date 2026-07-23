@@ -1,8 +1,8 @@
 import { render } from 'preact';
 import { useCallback, useEffect, useState } from 'preact/hooks';
-import type { JSX } from 'preact';
+import type { JSX as _JSX } from 'preact';
 import { LinkedInSearch } from './LinkedInSearch';
-import { colors, radii, shadows, fontFamily, inputStyle, btnPrimary, fieldLabel, sectionTitle, btnSecondary, tabBar, tabBtn } from './theme';
+import { colors, radii, shadows, fontFamily, inputStyle, fieldLabel, sectionTitle, tabBar, tabBtn } from './theme';
 
 interface ProfileData { readonly fullName: string; readonly contactEmail: string; readonly contactPhone: string; readonly city: string; readonly state: string; readonly linkedin: string; readonly portfolioUrl: string; readonly githubUrl: string; readonly workAuthorization: string; readonly salaryExpectations: string; readonly noticePeriod: string; readonly willingToRelocate: string; readonly yearsOfExperience: number; readonly currentTitle: string; readonly currentCompany: string; readonly highestDegree: string; readonly university: string; readonly fieldOfStudy: string; readonly desiredRole: string; readonly preferredLocation: string; readonly remotePreference: string; }
 interface LlmConfig { readonly apiUrl: string; readonly apiKey: string; readonly model: string; readonly resume: string; readonly prmExtractAdd: string; readonly prmTailorAdd: string; readonly prmCoverAdd: string; readonly prmScreeningAdd: string; readonly prmQuickAdd: string; readonly prmFormAdd: string; }
@@ -198,7 +198,7 @@ const LLM_DEFAULTS: LlmConfig = {
 
 interface PromptSlot { readonly key: keyof LlmConfig; readonly label: string; readonly description: string; readonly base: string; }
 
-const PROMPT_SLOTS: ReadonlyArray<PromptSlot> = [
+const PROMPT_SLOTS: readonly PromptSlot[] = [
   { key:'prmExtractAdd', label:'Job Extraction', description:'Pulls title, company, location, and full description from the job page.', base:PRM_JOB_EXTRACT_DEFAULT },
   { key:'prmTailorAdd', label:'Resume Tailoring (Summary)', description:'Writes a 3–5 sentence professional summary tailored to the job.', base:PRM_TAILOR_DEFAULT },
   { key:'prmCoverAdd', label:'Cover Letter', description:'Writes a tailored cover letter grounded in the resume.', base:PRM_COVER_DEFAULT },
@@ -207,7 +207,7 @@ const PROMPT_SLOTS: ReadonlyArray<PromptSlot> = [
   { key:'prmFormAdd', label:'Form Matching', description:'Maps candidate profile to arbitrary form fields, including screening questions.', base:PRM_FORM_DEFAULT },
 ];
 
-const PROFILE_FIELDS: ReadonlyArray<{key:keyof ProfileData;label:string;type:string;placeholder:string}> = [
+const PROFILE_FIELDS: readonly {key:keyof ProfileData;label:string;type:string;placeholder:string}[] = [
   {key:'fullName',label:'Full Name',type:'text',placeholder:'Ahmad Pouladzade'},
   {key:'contactEmail',label:'Email',type:'email',placeholder:'you@example.com'},
   {key:'contactPhone',label:'Phone',type:'tel',placeholder:'+49 123 456789'},
@@ -253,9 +253,9 @@ export function OptionsApp(): preact.JSX.Element {
   useEffect(()=>{
     browser.storage.local.get(['profile','llmConfig'],(r)=>{
       const s=r as Record<string,unknown>;
-      if(s['profile']&&typeof s['profile']==='object'&&s['profile']!==null)setProfile({...PROFILE_DEFAULTS,...(s['profile']as Partial<ProfileData>)});
-      if(s['llmConfig']&&typeof s['llmConfig']==='object'&&s['llmConfig']!==null){
-        const stored=s['llmConfig']as Record<string,unknown>;
+      if(s.profile&&typeof s.profile==='object'&&s.profile!==null)setProfile({...PROFILE_DEFAULTS,...(s.profile as Partial<ProfileData>)});
+      if(s.llmConfig&&typeof s.llmConfig==='object'&&s.llmConfig!==null){
+        const stored=s.llmConfig as Record<string,unknown>;
         const LEGACY_KEYS=['prmExtract','prmTailor','prmCover','prmScreening','prmQuick','prmForm'] as const;
         const cleaned:Record<string,unknown>={...LLM_DEFAULTS,...stored};
         let stripped=false;
@@ -267,8 +267,8 @@ export function OptionsApp(): preact.JSX.Element {
   },[]);
 
   const [saving,setSaving]=useState(false);
-  const updateP=useCallback((k:keyof ProfileData,v:string|number)=>setProfile(p=>({...p,[k]:v})),[]);
-  const updateLlm=useCallback((k:keyof LlmConfig,v:string)=>setLlm(l=>({...l,[k]:v})),[]);
+  const updateP=useCallback((k:keyof ProfileData,v:string|number)=>{ setProfile(p=>({...p,[k]:v})); },[]);
+  const updateLlm=useCallback((k:keyof LlmConfig,v:string)=>{ setLlm(l=>({...l,[k]:v})); },[]);
   const doSave=useCallback(()=>{
     setSaving(true);
     const start=Date.now();
@@ -278,7 +278,7 @@ export function OptionsApp(): preact.JSX.Element {
       setTimeout(()=>{
         setSaving(false);
         setSaveStatus('✓ Saved');
-        setTimeout(()=>setSaveStatus(''),2500);
+        setTimeout(()=>{ setSaveStatus(''); },2500);
       },remaining);
     });
   },[profile,llm]);
@@ -308,22 +308,22 @@ export function OptionsApp(): preact.JSX.Element {
 
       {/* ── Settings Tabs ── */}
       <div style={tabBar}>
-        <button onClick={()=>setSettingsTab('llm')} style={tabBtn(settingsTab==='llm')}>🤖 LLM Provider</button>
-        <button onClick={()=>setSettingsTab('profile')} style={tabBtn(settingsTab==='profile')}>📄 Resume & Profile</button>
-        <button onClick={()=>setSettingsTab('prompts')} style={tabBtn(settingsTab==='prompts')}>📝 Prompts</button>
+        <button onClick={()=>{ setSettingsTab('llm'); }} style={tabBtn(settingsTab==='llm')}>🤖 LLM Provider</button>
+        <button onClick={()=>{ setSettingsTab('profile'); }} style={tabBtn(settingsTab==='profile')}>📄 Resume & Profile</button>
+        <button onClick={()=>{ setSettingsTab('prompts'); }} style={tabBtn(settingsTab==='prompts')}>📝 Prompts</button>
       </div>
 
       {/* ── Tab: LLM Provider ── */}
       {settingsTab==='llm'&&<div>
-        <div style={{marginBottom:'12px'}}><label style={fieldLabel}>API URL</label><input type="text" value={llm.apiUrl} onInput={e=>updateLlm('apiUrl',(e.target as HTMLInputElement).value)} placeholder="https://api.deepseek.com/v1" style={inputStyle}/></div>
-        <div style={{marginBottom:'12px'}}><label style={fieldLabel}>API Key</label><input type="password" value={llm.apiKey} onInput={e=>updateLlm('apiKey',(e.target as HTMLInputElement).value)} placeholder="sk-..." style={inputStyle}/></div>
-        <div style={{marginBottom:'12px'}}><label style={fieldLabel}>Model</label><input type="text" value={llm.model} onInput={e=>updateLlm('model',(e.target as HTMLInputElement).value)} placeholder="deepseek-chat" style={inputStyle}/></div>
+        <div style={{marginBottom:'12px'}}><label style={fieldLabel}>API URL</label><input type="text" value={llm.apiUrl} onInput={e=>{ updateLlm('apiUrl',(e.target as HTMLInputElement).value); }} placeholder="https://api.deepseek.com/v1" style={inputStyle}/></div>
+        <div style={{marginBottom:'12px'}}><label style={fieldLabel}>API Key</label><input type="password" value={llm.apiKey} onInput={e=>{ updateLlm('apiKey',(e.target as HTMLInputElement).value); }} placeholder="sk-..." style={inputStyle}/></div>
+        <div style={{marginBottom:'12px'}}><label style={fieldLabel}>Model</label><input type="text" value={llm.model} onInput={e=>{ updateLlm('model',(e.target as HTMLInputElement).value); }} placeholder="deepseek-chat" style={inputStyle}/></div>
       </div>}
 
       {/* ── Tab: Resume & Profile ── */}
       {settingsTab==='profile'&&<div>
         <div style={sectionTitle}>📄 Resume (Markdown)</div>
-        <textarea value={llm.resume} onInput={e=>updateLlm('resume',(e.target as HTMLTextAreaElement).value)} placeholder="Paste your full resume in markdown here..." style={{width:'100%',height:'150px',padding:'10px 12px',fontSize:'12px',border:`1px solid ${colors.border}`,borderRadius:radii.sm,resize:'vertical',fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box',outline:'none',color:colors.textPrimary,backgroundColor:colors.surface}}/>
+        <textarea value={llm.resume} onInput={e=>{ updateLlm('resume',(e.target as HTMLTextAreaElement).value); }} placeholder="Paste your full resume in markdown here..." style={{width:'100%',height:'150px',padding:'10px 12px',fontSize:'12px',border:`1px solid ${colors.border}`,borderRadius:radii.sm,resize:'vertical',fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box',outline:'none',color:colors.textPrimary,backgroundColor:colors.surface}}/>
         <div style={{marginTop:'8px',display:'flex',gap:'8px',alignItems:'center',marginBottom:'20px'}}>
           <button onClick={doParseResume} disabled={parseStatus==='parsing'} style={{padding:'6px 14px',fontSize:'12px',fontWeight:600,backgroundColor:parseStatus==='parsing'?colors.accentHover:colors.accent,color:colors.textWhite,border:'none',borderRadius:radii.sm,cursor:parseStatus==='parsing'?'not-allowed':'pointer',transition:'all 150ms'}}>
             {parseStatus==='parsing'?'Parsing resume...':'Auto-fill Profile'}
@@ -350,7 +350,7 @@ export function OptionsApp(): preact.JSX.Element {
             <div key={slot.key} style={slotCard}>
               <div style={slotHeader}>
                 <span style={slotTitle}>{slot.label}</span>
-                <button onClick={()=>setExpandedSlot(isOpen?null:slot.key)} style={{padding:'2px 10px',fontSize:'11px',fontWeight:600,backgroundColor:isOpen?colors.accent:colors.surface,color:isOpen?colors.textWhite:colors.accent,border:`1px solid ${colors.accent}`,borderRadius:radii.sm,transition:'all 150ms',cursor:'pointer'}}>{isOpen?'Hide base prompt':'View base prompt'}</button>
+                <button onClick={()=>{ setExpandedSlot(isOpen?null:slot.key); }} style={{padding:'2px 10px',fontSize:'11px',fontWeight:600,backgroundColor:isOpen?colors.accent:colors.surface,color:isOpen?colors.textWhite:colors.accent,border:`1px solid ${colors.accent}`,borderRadius:radii.sm,transition:'all 150ms',cursor:'pointer'}}>{isOpen?'Hide base prompt':'View base prompt'}</button>
               </div>
               <div style={slotDesc}>{slot.description}</div>
               {isOpen&&<pre style={promptReadonly}>{slot.base}</pre>}
@@ -373,4 +373,4 @@ export function OptionsApp(): preact.JSX.Element {
   );
 }
 
-render(<OptionsApp/>,document.getElementById('app')as HTMLElement);
+render(<OptionsApp/>,document.getElementById('app')!);

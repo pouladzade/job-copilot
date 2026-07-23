@@ -10,7 +10,7 @@ interface FieldSnapshot {
 const MAX_VALUE_LENGTH = 5000;
 const TRUNCATION_WARNING_THRESHOLD = 0;
 
-const snapshots: Map<string, FieldSnapshot> = new Map();
+const snapshots = new Map<string, FieldSnapshot>();
 
 function dispatchEvents(element: Element, fieldType: ScrapedField['type']): void {
   const name = fieldType;
@@ -53,8 +53,8 @@ export function fillField(field: ScrapedField, value: string): void {
   // For radio groups, use the name to find all options
   if (field.type === 'radio') {
     // Try selector-based name extraction first (e.g., [name="work_auth"])
-    const nameMatch = selector.match(/\[name="(.+)"\]/);
-    let radioName = nameMatch !== null && nameMatch[1] !== undefined ? nameMatch[1] : '';
+    const nameMatch = /\[name="(.+)"\]/.exec(selector);
+    let radioName = nameMatch?.[1] !== undefined ? nameMatch[1] : '';
 
     // Fallback: try extracting name from the matched element itself (e.g., #auth_citizen)
     if (radioName === '') {
