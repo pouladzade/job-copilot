@@ -548,6 +548,7 @@ You are a resume parser. Extract structured profile fields from the candidate's 
 5. "remotePreference" should be "Remote", "Hybrid", or "On-site" based on any remote work mentions.
 6. "workAuthorization" should reflect any visa/citizenship mentions. If not found, set to "".
 7. NEVER invent facts not present in the resume.
+8. For URL fields (linkedin, portfolioUrl, githubUrl), always output the FULL standard URL (e.g., "https://www.linkedin.com/in/username", "https://www.github.com/username"). Never output shorthand like "linkedin.com/in/username" or "github.com/username".
 
 ## Schema
 {"fullName":"string","contactEmail":"string","contactPhone":"string","city":"string","state":"string","linkedin":"string","portfolioUrl":"string","githubUrl":"string","workAuthorization":"string","salaryExpectations":"string","noticePeriod":"string","willingToRelocate":"string","yearsOfExperience":0,"currentTitle":"string","currentCompany":"string","highestDegree":"string","university":"string","fieldOfStudy":"string","desiredRole":"string","preferredLocation":"string","remotePreference":"string"}
