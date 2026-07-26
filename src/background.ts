@@ -4,178 +4,8 @@
 // `prm*Add` custom-instructions field, which the runner injects into the
 // `{{customInstructions}}` slot below.
 import { getProfile, profileToContext, deterministicMatch } from './utils/profile-match';
-
-const DEFAULT_PROMPTS = {
-  prmExtract: `## System
-You are a job posting extractor. Read the page text and pull the structured job data the user applied for.
-
-## Rules
-1. Return ONLY a valid JSON object — no markdown fences, no commentary.
-2. Use the EXACT keys in the schema. Do not add or rename fields.
-3. "title" must be the specific role name (e.g. "Senior Backend Engineer"), not a generic page heading.
-4. "company" is the hiring company / employer, not the recruiting agency.
-5. "location" should be a single string: "City, Country" or "Remote" — fall back to "Unknown" if you cannot determine it.
-6. "description" must be the FULL job description body, preserving bullet points as newline-separated lines.
-7. If the page text does not appear to be a job posting, return all-empty strings.
-8. Never invent data. If a field cannot be determined, set it to "".
-
-## Schema
-{"title":"string","company":"string","location":"string","description":"string"}
-
-## User Custom Instructions (optional)
-{{customInstructions}}
-
-## Page Text
-{{pageText}}`,
-  prmTailor: `## System
-You are an expert resume tailoring assistant. Produce a 3–5 sentence professional summary that positions the candidate for the target role.
-
-## Rules
-1. NEVER invent facts, skills, achievements, certifications, or experience not present in the resume.
-2. Lead with the candidate's current title, years of experience, and one quantified achievement from the resume.
-3. Weave in 1–2 named skills or technologies the job description emphasises, but only if the resume already shows them.
-4. Mention the company name and the specific role title in the summary.
-5. Keep it 3–5 sentences, roughly 70–110 words. Recruiters skim.
-6. Return ONLY valid JSON — no markdown fences, no commentary.
-7. Use the EXACT keys in the schema. Do not add or rename fields.
-8. "confidence" reflects how well the resume supports the summary: 0.85–0.95 when direct matches, 0.6–0.8 when light inference, ≤0.5 if the resume is weak for the role.
-
-## Schema
-{"resumeSummary":"string","confidence":0.0-1.0}
-
-## User Custom Instructions (optional)
-{{customInstructions}}
-
-## Job Description
-{{jobDescription}}
-
-## Resume
-{{resumeContent}}`,
-  prmCover: `## System
-You are an expert cover letter writer. Write a tailored, human-sounding cover letter for the target role.
-
-## Rules
-1. 3 short paragraphs: (1) role + why this company, (2) the most relevant 1–2 resume experiences with metrics, (3) availability + close.
-2. NEVER invent facts, skills, or experience not present in the resume.
-3. Reference the actual company name and the specific job title.
-4. Address the cover letter to "Hiring Team" unless the job description names a recruiter.
-5. Keep it 250–350 words. No filler ("I am writing to express my interest", "great culture", "passionate about innovation").
-6. Return ONLY valid JSON — no markdown fences, no commentary.
-7. Use the EXACT keys in the schema. Do not add or rename fields.
-8. "confidence" reflects how well the resume supports the letter: 0.85–0.95 when direct matches, 0.6–0.8 when light inference, ≤0.5 if the resume is weak for the role.
-
-## Schema
-{"coverLetter":"string","confidence":0.0-1.0}
-
-## User Custom Instructions (optional)
-{{customInstructions}}
-
-## Job Description
-{{jobDescription}}
-
-## Resume
-{{resumeContent}}`,
-  prmScreening: `## System
-You are a job application screening-question assistant. The candidate is filling out an automated application form. Generate concise, specific, candidate-friendly answers that reference the actual job posting, the candidate's resume, and their profile. The user reviews and edits everything before submit.
-
-## Question Categories — Use These Strategies
-**"Why this company / Why us / What attracted you"**: Pick 2-3 SPECIFIC things mentioned in the job description — product, tech stack, market, customer segment, mission, team structure, recent growth. Connect to one concrete thing from the candidate's resume. NEVER use generic phrases like "great culture", "exciting opportunity", "passionate about innovation".
-**"Why this role / Why this position"**: Reference the specific job title. Connect the candidate's current title, years of experience, and one or two named skills or technologies from the requirements. Show you read the posting.
-**"Tell us about yourself / Walk us through your background"**: 3 sentences max. (1) Current role + years of experience. (2) One quantified achievement or specialty from the resume. (3) Why this transition makes sense for the candidate's career.
-**"Salary expectations"**: Use profile.salaryExpectations if present, else "Open to discussion based on total compensation, scope, and equity".
-**"Notice period / Availability / When can you start"**: Use profile.noticePeriod if present, else "Two weeks, negotiable".
-**"Willing to relocate"**: Use profile.willingToRelocate if present, else infer from preferredLocation vs jobLocation.
-**"Years of experience with X"**: Use profile.yearsOfExperience or count from resume dates. Match the technology in the question.
-**"Authorized to work / Visa / Sponsorship"**: Use profile.workAuthorization verbatim.
-**Other open-ended**: 1-3 sentences grounded in resume and the specific job posting. No generic platitudes.
-
-## Rules
-1. Every answer must reference something concrete from the job description OR the candidate's resume or profile. If you cannot ground an answer, list it in missingInformation.
-2. Keep each answer to 1-4 sentences. Recruiters scan.
-3. NEVER fabricate experience, skills, achievements, or interests not in the resume or profile.
-4. For yes/no fields, give a single word or short phrase.
-5. Confidence: 0.9 when directly grounded in resume/profile, 0.6-0.8 when reasonable inference, 0.3-0.5 when best guess.
-6. Return ONLY valid JSON — no markdown fences, no commentary.
-7. Use the EXACT keys in the schema. Do not add or rename fields.
-
-## Schema
-{"screeningAnswers":[{"questionId":"string","question":"string","answer":"string","confidence":0.0-1.0}],"missingInformation":["string"]}
-
-## User Custom Instructions (optional)
-{{customInstructions}}
-
-## Job
-Title: {{jobTitle}}
-Company: {{jobCompany}}
-Location: {{jobLocation}}
-Description:
-{{jobDescription}}
-
-## Candidate Profile
-{{candidateProfile}}
-
-## Resume
-{{resumeContent}}`,
-  prmQuick: `## System
-You are a job suitability evaluator. Score how well the candidate's resume fits the job description.
-
-## Rules
-1. "score" is an integer 0–10:
-   - 9–10: very strong fit; the resume already names 3+ required skills and the experience level matches.
-   - 6–8:  moderate fit; missing 1–2 requirements but adjacent skills are present.
-   - 3–5:  weak fit; large skill or seniority gap.
-   - 0–2:  not a fit; the role targets a different domain or level.
-2. "verdict" must be EXACTLY one of: "Strong Match" | "Moderate Match" | "Weak Match".
-   - score >= 8 → "Strong Match"
-   - score 5–7 → "Moderate Match"
-   - score <= 4 → "Weak Match"
-3. "reasons" lists 2–4 SHORT, EVIDENCE-GROUNDED bullets — each one cites something from the resume AND something from the job description. Avoid generic phrases.
-4. Return ONLY valid JSON — no markdown fences, no commentary.
-5. Use the EXACT keys in the schema. Do not add or rename fields.
-
-## Schema
-{"score":0-10,"verdict":"Strong Match"|"Moderate Match"|"Weak Match","reasons":["string"]}
-
-## User Custom Instructions (optional)
-{{customInstructions}}
-
-## Job Description
-{{jobDescription}}
-
-## Resume
-{{resumeContent}}`,
-  prmForm: `## System
-You are a form-filling assistant. Given the candidate's profile, resume, and a list of form fields, return values to fill. Return ONLY valid JSON.
-
-## Rules
-1. ALWAYS fill fields when a reasonable answer exists in the profile or resume. The user reviews everything before submit.
-2. For select fields with listed options, return a value that exactly matches one of the provided options. If none fits, list the fieldId in unmatched.
-3. Set confidence by source: 0.85-0.95 when profile provides it directly, 0.6-0.8 when inferred from resume, 0.3-0.5 when guessing.
-4. For fields asking about demographics, identity, or sensitive info not in the profile, fill with "Prefer not to say" at low confidence (0.3).
-5. For yes/no questions, default to the most candidate-friendly answer supported by the profile (e.g. willing to relocate when preferredLocation differs from jobLocation).
-6. Only list fieldId in unmatched when there is genuinely no defensible answer.
-7. Many application forms include screening-style open-ended questions (textareas). Use these strategies:
-   - "Why this company / Why us / What attracted you": 2-3 SPECIFIC things from the job description or company background; connect to one concrete thing from the resume. NEVER "great culture", "exciting opportunity", "passionate about innovation".
-   - "Why this role / Why this position": reference the job title, the candidate's current title + years, 1-2 named skills from requirements.
-   - "Tell us about yourself / your background": 3 sentences — current role + years + 1 quantified achievement + why this transition.
-   - "Tell us about <specific topic>": 1-4 sentences grounded in resume content. No generic platitudes.
-   - "How would you describe your experience with X": name the technologies from resume, quantify years, give one concrete project example.
-   - "Anything else you'd like us to know": one or two sentences — what makes you a strong fit that hasn't been covered.
-8. Return ONLY valid JSON — no markdown fences, no commentary.
-9. Use the EXACT keys in the schema. Do not add or rename fields.
-
-## Schema
-{"values":[{"fieldId":"string","value":"string","confidence":0.0-1.0}],"unmatched":["fieldId"]}
-
-## User Custom Instructions (optional)
-{{customInstructions}}
-
-## Candidate Profile
-{{candidateContext}}
-
-## Form Fields
-{{fieldsJson}}`,
-};
+import { DEFAULT_PROMPTS } from './utils/prompt-templates';
+import { LLM_DEFAULTS, type LlmConfig } from './utils/settings-schema';
 
 const EMPTY_CUSTOM = '(none)';
 
@@ -187,29 +17,29 @@ function estimateCost(model:string,promptTokens:number,completionTokens:number):
   return (promptTokens/1_000_000)*r.p+(completionTokens/1_000_000)*r.c;
 }
 
-interface LlmConfig{apiUrl:string;apiKey:string;model:string;resume:string;prmExtractAdd:string;prmTailorAdd:string;prmCoverAdd:string;prmScreeningAdd:string;prmQuickAdd:string;prmFormAdd:string;}
 async function getLlmConfig():Promise<LlmConfig>{
   const r=await browser.storage.local.get('llmConfig');
   const s=r as Record<string,unknown>;
   const c=s.llmConfig;
-  const base={apiUrl:'https://api.deepseek.com/v1',apiKey:'',model:'deepseek-chat',resume:''};
-  const adds={prmExtractAdd:'',prmTailorAdd:'',prmCoverAdd:'',prmScreeningAdd:'',prmQuickAdd:'',prmFormAdd:''};
-  if(c&&typeof c==='object'&&c!==null){
-    const obj=c as Record<string,unknown>;
-    return{
-      apiUrl:typeof obj.apiUrl==='string'?obj.apiUrl:base.apiUrl,
-      apiKey:typeof obj.apiKey==='string'?obj.apiKey:base.apiKey,
-      model:typeof obj.model==='string'?obj.model:base.model,
-      resume:typeof obj.resume==='string'?obj.resume:base.resume,
-      prmExtractAdd:typeof obj.prmExtractAdd==='string'?obj.prmExtractAdd:adds.prmExtractAdd,
-      prmTailorAdd:typeof obj.prmTailorAdd==='string'?obj.prmTailorAdd:adds.prmTailorAdd,
-      prmCoverAdd:typeof obj.prmCoverAdd==='string'?obj.prmCoverAdd:adds.prmCoverAdd,
-      prmScreeningAdd:typeof obj.prmScreeningAdd==='string'?obj.prmScreeningAdd:adds.prmScreeningAdd,
-      prmQuickAdd:typeof obj.prmQuickAdd==='string'?obj.prmQuickAdd:adds.prmQuickAdd,
-      prmFormAdd:typeof obj.prmFormAdd==='string'?obj.prmFormAdd:adds.prmFormAdd,
-    };
-  }
-  return{...base,...adds};
+  const pick=(k:keyof LlmConfig,d:string):string=>{
+    if(c&&typeof c==='object'&&c!==null){
+      const v=(c as Record<string,unknown>)[k];
+      return typeof v==='string'?v:d;
+    }
+    return d;
+  };
+  return {
+    apiUrl:pick('apiUrl',LLM_DEFAULTS.apiUrl),
+    apiKey:pick('apiKey',LLM_DEFAULTS.apiKey),
+    model:pick('model',LLM_DEFAULTS.model),
+    resume:pick('resume',LLM_DEFAULTS.resume),
+    prmExtractAdd:pick('prmExtractAdd',LLM_DEFAULTS.prmExtractAdd),
+    prmSummaryAdd:pick('prmSummaryAdd',LLM_DEFAULTS.prmSummaryAdd),
+    prmCoverAdd:pick('prmCoverAdd',LLM_DEFAULTS.prmCoverAdd),
+    prmQuickAdd:pick('prmQuickAdd',LLM_DEFAULTS.prmQuickAdd),
+    prmFormAdd:pick('prmFormAdd',LLM_DEFAULTS.prmFormAdd),
+    prmReplyAdd:pick('prmReplyAdd',LLM_DEFAULTS.prmReplyAdd),
+  };
 }
 
 function isLocalUrl(url:string):boolean{
@@ -379,7 +209,7 @@ async function handleSummary(payload:{extraction:ExtractionPayload},sendResponse
   try{
     const{job,err}=await resolveJob(payload.extraction,cfg);
     if(!job){sendResponse({success:false,...(err??{error:'No job data',debug:''})});return}
-    const r=await callLlm(composePrompt(DEFAULT_PROMPTS.prmTailor,cfg.prmTailorAdd).replace('{{jobDescription}}',job.description).replace('{{resumeContent}}',cfg.resume));
+    const r=await callLlm(composePrompt(DEFAULT_PROMPTS.prmSummary,cfg.prmSummaryAdd).replace('{{jobDescription}}',job.description).replace('{{resumeContent}}',cfg.resume));
     const summary=typeof r.data.resumeSummary==='string'?r.data.resumeSummary:'';
     if(summary===''){sendResponse({success:false,error:'Model returned an empty summary.'});return}
     sendResponse({success:true,data:{
@@ -516,10 +346,13 @@ async function handleReply(pageText:string,replyPrompt:string,sendResponse:(r:un
   if(!isLocalUrl(cfg.apiUrl)&&cfg.apiKey===''){sendResponse({success:false,error:'API key not configured.'});return}
   if(cfg.resume===''){sendResponse({success:false,error:'Resume not configured.'});return}
   try{
-    const prompt=`## System\nYou are a professional message reply assistant. Write a brief, articulate reply based on the user's intent and their resume context. Keep it concise and natural.\n## User's Intent\n${replyPrompt}\n## Page Context (conversation/message)\n${pageText.slice(0,5000)}\n## Resume\n${cfg.resume.slice(0,2000)}\n\nReturn ONLY valid JSON:\n{"reply":"string"}`;
+    const prompt=composePrompt(DEFAULT_PROMPTS.prmReply,cfg.prmReplyAdd)
+      .replace('{{userIntent}}',replyPrompt)
+      .replace('{{pageText}}',pageText.slice(0,5000))
+      .replace('{{jobDescription}}','')
+      .replace('{{resumeContent}}',cfg.resume.slice(0,2000));
     const r=await callLlm(prompt);
     let reply=typeof r.data.reply==='string'?r.data.reply:'';
-    // Fallback: local models may use different keys
     if(reply==='')reply=typeof r.data.response==='string'?r.data.response:'';
     if(reply==='')reply=typeof r.data.message==='string'?r.data.message:'';
     if(reply==='')reply=typeof r.data.content==='string'?r.data.content:'';

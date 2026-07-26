@@ -3,233 +3,55 @@ import { useCallback, useEffect, useState } from 'preact/hooks';
 import type { JSX as _JSX } from 'preact';
 import { LinkedInSearch } from './LinkedInSearch';
 import { colors, radii, shadows, fontFamily, inputStyle, fieldLabel, sectionTitle, tabBar, tabBtn } from './theme';
+import { DEFAULT_PROMPTS } from '../utils/prompt-templates';
+import {
+  LLM_DEFAULTS,
+  PROFILE_DEFAULTS,
+  PROFILE_FIELDS,
+  PROMPT_SLOTS,
+  type LlmConfig,
+  type ProfileData,
+} from '../utils/settings-schema';
 
-interface ProfileData { readonly fullName: string; readonly contactEmail: string; readonly contactPhone: string; readonly city: string; readonly state: string; readonly linkedin: string; readonly portfolioUrl: string; readonly githubUrl: string; readonly workAuthorization: string; readonly salaryExpectations: string; readonly noticePeriod: string; readonly willingToRelocate: string; readonly yearsOfExperience: number; readonly currentTitle: string; readonly currentCompany: string; readonly highestDegree: string; readonly university: string; readonly fieldOfStudy: string; readonly desiredRole: string; readonly preferredLocation: string; readonly remotePreference: string; }
-interface LlmConfig { readonly apiUrl: string; readonly apiKey: string; readonly model: string; readonly resume: string; readonly prmExtractAdd: string; readonly prmTailorAdd: string; readonly prmCoverAdd: string; readonly prmScreeningAdd: string; readonly prmQuickAdd: string; readonly prmFormAdd: string; }
-
-const PROFILE_DEFAULTS: ProfileData = { fullName:'',contactEmail:'',contactPhone:'',city:'',state:'',linkedin:'',portfolioUrl:'',githubUrl:'',workAuthorization:'',salaryExpectations:'',noticePeriod:'',willingToRelocate:'',yearsOfExperience:0,currentTitle:'',currentCompany:'',highestDegree:'',university:'',fieldOfStudy:'',desiredRole:'',preferredLocation:'',remotePreference:'' };
-
-// ── Default prompt templates ─────────────────────────────────────────
-// These are the BASE prompts the extension always uses. They are
-// intentionally not editable in the UI — only the `*Add` custom
-// instructions below each base prompt can be edited by the user.
-// {{customInstructions}} is a fixed slot the runner fills with the
-// user's additions. Do not rename it.
-
-const PRM_JOB_EXTRACT_DEFAULT = `## System
-You are a job posting extractor. Read the page text and pull the structured job data the user applied for.
-
-## Rules
-1. Return ONLY a valid JSON object — no markdown fences, no commentary.
-2. Use the EXACT keys in the schema. Do not add or rename fields.
-3. "title" must be the specific role name (e.g. "Senior Backend Engineer"), not a generic page heading.
-4. "company" is the hiring company / employer, not the recruiting agency.
-5. "location" should be a single string: "City, Country" or "Remote" — fall back to "Unknown" if you cannot determine it.
-6. "description" must be the FULL job description body, preserving bullet points as newline-separated lines.
-7. If the page text does not appear to be a job posting, return all-empty strings.
-8. Never invent data. If a field cannot be determined, set it to "".
-
-## Schema
-{"title":"string","company":"string","location":"string","description":"string"}
-
-## User Custom Instructions (optional)
-{{customInstructions}}
-
-## Page Text
-{{pageText}}`;
-
-const PRM_TAILOR_DEFAULT = `## System
-You are an expert resume tailoring assistant. Produce a 3–5 sentence professional summary that positions the candidate for the target role.
-
-## Rules
-1. NEVER invent facts, skills, achievements, certifications, or experience not present in the resume.
-2. Lead with the candidate's current title, years of experience, and one quantified achievement from the resume.
-3. Weave in 1–2 named skills or technologies the job description emphasises, but only if the resume already shows them.
-4. Mention the company name and the specific role title in the summary.
-5. Keep it 3–5 sentences, roughly 70–110 words. Recruiters skim.
-6. Return ONLY valid JSON — no markdown fences, no commentary.
-7. Use the EXACT keys in the schema. Do not add or rename fields.
-8. "confidence" reflects how well the resume supports the summary: 0.85–0.95 when direct matches, 0.6–0.8 when light inference, ≤0.5 if the resume is weak for the role.
-
-## Schema
-{"resumeSummary":"string","confidence":0.0-1.0}
-
-## User Custom Instructions (optional)
-{{customInstructions}}
-
-## Job Description
-{{jobDescription}}
-
-## Resume
-{{resumeContent}}`;
-
-const PRM_COVER_DEFAULT = `## System
-You are an expert cover letter writer. Write a tailored, human-sounding cover letter for the target role.
-
-## Rules
-1. 3 short paragraphs: (1) role + why this company, (2) the most relevant 1–2 resume experiences with metrics, (3) availability + close.
-2. NEVER invent facts, skills, or experience not present in the resume.
-3. Reference the actual company name and the specific job title.
-4. Address the cover letter to "Hiring Team" unless the job description names a recruiter.
-5. Keep it 250–350 words. No filler ("I am writing to express my interest", "great culture", "passionate about innovation").
-6. Return ONLY valid JSON — no markdown fences, no commentary.
-7. Use the EXACT keys in the schema. Do not add or rename fields.
-8. "confidence" reflects how well the resume supports the letter: 0.85–0.95 when direct matches, 0.6–0.8 when light inference, ≤0.5 if the resume is weak for the role.
-
-## Schema
-{"coverLetter":"string","confidence":0.0-1.0}
-
-## User Custom Instructions (optional)
-{{customInstructions}}
-
-## Job Description
-{{jobDescription}}
-
-## Resume
-{{resumeContent}}`;
-
-const PRM_SCREENING_DEFAULT = `## System
-You are a job application screening-question assistant. The candidate is filling out an automated application form. Generate concise, specific, candidate-friendly answers that reference the actual job posting, the candidate's resume, and their profile. The user reviews and edits everything before submit.
-
-## Question Categories — Use These Strategies
-**"Why this company / Why us / What attracted you"**: Pick 2-3 SPECIFIC things mentioned in the job description — product, tech stack, market, customer segment, mission, team structure, recent growth. Connect to one concrete thing from the candidate's resume. NEVER use generic phrases like "great culture", "exciting opportunity", "passionate about innovation".
-**"Why this role / Why this position"**: Reference the specific job title. Connect the candidate's current title, years of experience, and one or two named skills or technologies from the requirements. Show you read the posting.
-**"Tell us about yourself / Walk us through your background"**: 3 sentences max. (1) Current role + years of experience. (2) One quantified achievement or specialty from the resume. (3) Why this transition makes sense for the candidate's career.
-**"Salary expectations"**: Use profile.salaryExpectations if present, else "Open to discussion based on total compensation, scope, and equity".
-**"Notice period / Availability / When can you start"**: Use profile.noticePeriod if present, else "Two weeks, negotiable".
-**"Willing to relocate"**: Use profile.willingToRelocate if present, else infer from preferredLocation vs jobLocation.
-**"Years of experience with X"**: Use profile.yearsOfExperience or count from resume dates. Match the technology in the question.
-**"Authorized to work / Visa / Sponsorship"**: Use profile.workAuthorization verbatim.
-**Other open-ended**: 1-3 sentences grounded in resume and the specific job posting. No generic platitudes.
-
-## Rules
-1. Every answer must reference something concrete from the job description OR the candidate's resume or profile. If you cannot ground an answer, list it in missingInformation.
-2. Keep each answer to 1-4 sentences. Recruiters scan.
-3. NEVER fabricate experience, skills, achievements, or interests not in the resume or profile.
-4. For yes/no fields, give a single word or short phrase.
-5. Confidence: 0.9 when directly grounded in resume/profile, 0.6-0.8 when reasonable inference, 0.3-0.5 when best guess.
-6. Return ONLY valid JSON — no markdown fences, no commentary.
-7. Use the EXACT keys in the schema. Do not add or rename fields.
-
-## Schema
-{"screeningAnswers":[{"questionId":"string","question":"string","answer":"string","confidence":0.0-1.0}],"missingInformation":["string"]}
-
-## User Custom Instructions (optional)
-{{customInstructions}}
-
-## Job
-Title: {{jobTitle}}
-Company: {{jobCompany}}
-Location: {{jobLocation}}
-Description:
-{{jobDescription}}
-
-## Candidate Profile
-{{candidateProfile}}
-
-## Resume
-{{resumeContent}}`;
-
-const PRM_QUICK_DEFAULT = `## System
-You are a job suitability evaluator. Score how well the candidate's resume fits the job description.
-
-## Rules
-1. "score" is an integer 0–10:
-   - 9–10: very strong fit; the resume already names 3+ required skills and the experience level matches.
-   - 6–8:  moderate fit; missing 1–2 requirements but adjacent skills are present.
-   - 3–5:  weak fit; large skill or seniority gap.
-   - 0–2:  not a fit; the role targets a different domain or level.
-2. "verdict" must be EXACTLY one of: "Strong Match" | "Moderate Match" | "Weak Match".
-   - score >= 8 → "Strong Match"
-   - score 5–7 → "Moderate Match"
-   - score <= 4 → "Weak Match"
-3. "reasons" lists 2–4 SHORT, EVIDENCE-GROUNDED bullets — each one cites something from the resume AND something from the job description. Avoid generic phrases.
-4. Return ONLY valid JSON — no markdown fences, no commentary.
-5. Use the EXACT keys in the schema. Do not add or rename fields.
-
-## Schema
-{"score":0-10,"verdict":"Strong Match"|"Moderate Match"|"Weak Match","reasons":["string"]}
-
-## User Custom Instructions (optional)
-{{customInstructions}}
-
-## Job Description
-{{jobDescription}}
-
-## Resume
-{{resumeContent}}`;
-
-const PRM_FORM_DEFAULT = `## System
-You are a form-filling assistant. Given the candidate's profile, resume, and a list of form fields, return values to fill. Return ONLY valid JSON.
-
-## Rules
-1. ALWAYS fill fields when a reasonable answer exists in the profile or resume. The user reviews everything before submit.
-2. For select fields with listed options, return a value that exactly matches one of the provided options. If none fits, list the fieldId in unmatched.
-3. Set confidence by source: 0.85-0.95 when profile provides it directly, 0.6-0.8 when inferred from resume, 0.3-0.5 when guessing.
-4. For fields asking about demographics, identity, or sensitive info not in the profile, fill with "Prefer not to say" at low confidence (0.3).
-5. For yes/no questions, default to the most candidate-friendly answer supported by the profile (e.g. willing to relocate when preferredLocation differs from jobLocation).
-6. Only list fieldId in unmatched when there is genuinely no defensible answer.
-7. Many application forms include screening-style open-ended questions (textareas). Use these strategies:
-   - "Why this company / Why us / What attracted you": 2-3 SPECIFIC things from the job description or company background; connect to one concrete thing from the resume. NEVER "great culture", "exciting opportunity", "passionate about innovation".
-   - "Why this role / Why this position": reference the job title, the candidate's current title + years, 1-2 named skills from requirements.
-   - "Tell us about yourself / your background": 3 sentences — current role + years + 1 quantified achievement + why this transition.
-   - "Tell us about <specific topic>": 1-4 sentences grounded in resume content. No generic platitudes.
-   - "How would you describe your experience with X": name the technologies from resume, quantify years, give one concrete project example.
-   - "Anything else you'd like us to know": one or two sentences — what makes you a strong fit that hasn't been covered.
-8. Return ONLY valid JSON — no markdown fences, no commentary.
-9. Use the EXACT keys in the schema. Do not add or rename fields.
-
-## Schema
-{"values":[{"fieldId":"string","value":"string","confidence":0.0-1.0}],"unmatched":["fieldId"]}
-
-## User Custom Instructions (optional)
-{{customInstructions}}
-
-## Candidate Profile
-{{candidateContext}}
-
-## Form Fields
-{{fieldsJson}}`;
-
-const LLM_DEFAULTS: LlmConfig = {
-  apiUrl:'https://api.deepseek.com/v1',apiKey:'',model:'deepseek-chat',resume:'',
-  prmExtractAdd:'',prmTailorAdd:'',prmCoverAdd:'',prmScreeningAdd:'',prmQuickAdd:'',prmFormAdd:'',
+const PROMPT_LABEL: Record<keyof LlmConfig, { readonly label: string; readonly description: string }> = {
+  apiUrl: { label: '', description: '' },
+  apiKey: { label: '', description: '' },
+  model: { label: '', description: '' },
+  resume: { label: '', description: '' },
+  prmExtractAdd: {
+    label: 'Job Extraction',
+    description: 'Pulls title, company, location, and full description from the job page.',
+  },
+  prmSummaryAdd: {
+    label: 'Resume Summary',
+    description: 'Writes a 3–5 sentence professional summary tailored to the job.',
+  },
+  prmCoverAdd: {
+    label: 'Cover Letter',
+    description: 'Writes a tailored cover letter grounded in the resume.',
+  },
+  prmQuickAdd: {
+    label: 'Quick Match',
+    description: 'Scores the candidate vs the job 0–10 with grounded reasons.',
+  },
+  prmFormAdd: {
+    label: 'Form Matching',
+    description: 'Maps candidate profile to arbitrary form fields, including screening questions.',
+  },
+  prmReplyAdd: {
+    label: 'Message Reply',
+    description: 'Drafts a reply to a recruiter or hiring team message.',
+  },
 };
 
-interface PromptSlot { readonly key: keyof LlmConfig; readonly label: string; readonly description: string; readonly base: string; }
-
-const PROMPT_SLOTS: readonly PromptSlot[] = [
-  { key:'prmExtractAdd', label:'Job Extraction', description:'Pulls title, company, location, and full description from the job page.', base:PRM_JOB_EXTRACT_DEFAULT },
-  { key:'prmTailorAdd', label:'Resume Tailoring (Summary)', description:'Writes a 3–5 sentence professional summary tailored to the job.', base:PRM_TAILOR_DEFAULT },
-  { key:'prmCoverAdd', label:'Cover Letter', description:'Writes a tailored cover letter grounded in the resume.', base:PRM_COVER_DEFAULT },
-  { key:'prmScreeningAdd', label:'Screening Answers', description:'Answers free-form and yes/no application questions.', base:PRM_SCREENING_DEFAULT },
-  { key:'prmQuickAdd', label:'Quick Match', description:'Scores the candidate vs the job 0–10 with grounded reasons.', base:PRM_QUICK_DEFAULT },
-  { key:'prmFormAdd', label:'Form Matching', description:'Maps candidate profile to arbitrary form fields, including screening questions.', base:PRM_FORM_DEFAULT },
-];
-
-const PROFILE_FIELDS: readonly {key:keyof ProfileData;label:string;type:string;placeholder:string}[] = [
-  {key:'fullName',label:'Full Name',type:'text',placeholder:'Ahmad Pouladzade'},
-  {key:'contactEmail',label:'Email',type:'email',placeholder:'you@example.com'},
-  {key:'contactPhone',label:'Phone',type:'tel',placeholder:'+49 123 456789'},
-  {key:'city',label:'City',type:'text',placeholder:'Berlin'},
-  {key:'state',label:'State / Region',type:'text',placeholder:'Berlin'},
-  {key:'linkedin',label:'LinkedIn URL',type:'url',placeholder:'https://linkedin.com/in/...'},
-  {key:'portfolioUrl',label:'Portfolio / Website',type:'url',placeholder:'https://...'},
-  {key:'githubUrl',label:'GitHub URL',type:'url',placeholder:'https://github.com/...'},
-  {key:'workAuthorization',label:'Work Authorization',type:'text',placeholder:'EU Blue Card / Citizen'},
-  {key:'salaryExpectations',label:'Salary Expectations',type:'text',placeholder:'€90,000 – €110,000'},
-  {key:'noticePeriod',label:'Notice Period',type:'text',placeholder:'2 weeks / 3 months'},
-  {key:'willingToRelocate',label:'Willing to Relocate?',type:'text',placeholder:'Yes / No / Within EU'},
-  {key:'yearsOfExperience',label:'Years of Experience',type:'number',placeholder:'7'},
-  {key:'currentTitle',label:'Current Job Title',type:'text',placeholder:'Senior Software Engineer'},
-  {key:'currentCompany',label:'Current Company',type:'text',placeholder:'Company GmbH'},
-  {key:'highestDegree',label:'Highest Degree',type:'text',placeholder:'M.S. Computer Science'},
-  {key:'university',label:'University',type:'text',placeholder:'University of ...'},
-  {key:'fieldOfStudy',label:'Field of Study',type:'text',placeholder:'Computer Science'},
-  {key:'desiredRole',label:'Desired Role',type:'text',placeholder:'Senior Backend Engineer'},
-  {key:'preferredLocation',label:'Preferred Location',type:'text',placeholder:'Berlin'},
-  {key:'remotePreference',label:'Remote Preference',type:'text',placeholder:'Remote / Hybrid / On-site'},
-];
+const PROMPT_BASE_KEY: { [K in keyof LlmConfig]?: keyof typeof DEFAULT_PROMPTS } = {
+  prmExtractAdd: 'prmExtract',
+  prmSummaryAdd: 'prmSummary',
+  prmCoverAdd: 'prmCover',
+  prmQuickAdd: 'prmQuick',
+  prmFormAdd: 'prmForm',
+  prmReplyAdd: 'prmReply',
+};
 
 const promptReadonly={width:'100%',padding:'10px 12px',fontSize:'11px',border:`1px solid ${colors.border}`,borderRadius:radii.sm,backgroundColor:colors.surfaceHover,color:colors.textSecondary,fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box'as const,lineHeight:1.5,whiteSpace:'pre-wrap'as const,overflowY:'auto'as const,maxHeight:'220px'};
 const customArea={width:'100%',height:'80px',padding:'8px 10px',fontSize:'12px',border:`1px solid ${colors.accentBorder}`,borderRadius:radii.sm,backgroundColor:colors.accentBg,resize:'vertical',fontFamily,boxSizing:'border-box'as const,lineHeight:1.4,outline:'none',color:colors.textPrimary};
@@ -240,8 +62,24 @@ const slotDesc={fontSize:'11px',color:colors.textMuted,marginBottom:'10px'};
 const slotTag={fontSize:'10px',fontWeight:600,color:colors.textMuted,textTransform:'uppercase'as const,letterSpacing:'0.04em'};
 
 type SettingsTab = 'llm' | 'profile' | 'prompts';
+type PromptSlotKey = {
+  readonly key: keyof LlmConfig;
+  readonly label: string;
+  readonly description: string;
+  readonly base: string;
+};
 
-export function OptionsApp(): preact.JSX.Element {
+const SLOTS: readonly PromptSlotKey[] = PROMPT_SLOTS.map((slot) => {
+  const baseKey = PROMPT_BASE_KEY[slot.key];
+  return {
+    key: slot.key,
+    label: PROMPT_LABEL[slot.key].label,
+    description: PROMPT_LABEL[slot.key].description,
+    base: baseKey === undefined ? '' : DEFAULT_PROMPTS[baseKey],
+  };
+});
+
+export function OptionsApp(): _JSX.Element {
   const [profile,setProfile]=useState(PROFILE_DEFAULTS);
   const [llm,setLlm]=useState(LLM_DEFAULTS);
   const [saveStatus,setSaveStatus]=useState('');
@@ -253,22 +91,29 @@ export function OptionsApp(): preact.JSX.Element {
   useEffect(()=>{
     browser.storage.local.get(['profile','llmConfig'],(r)=>{
       const s=r as Record<string,unknown>;
-      if(s.profile&&typeof s.profile==='object'&&s.profile!==null)setProfile({...PROFILE_DEFAULTS,...(s.profile as Partial<ProfileData>)});
+      if(s.profile&&typeof s.profile==='object'&&s.profile!==null){
+        setProfile({...PROFILE_DEFAULTS,...(s.profile as Partial<ProfileData>)});
+      }
       if(s.llmConfig&&typeof s.llmConfig==='object'&&s.llmConfig!==null){
         const stored=s.llmConfig as Record<string,unknown>;
-        const LEGACY_KEYS=['prmExtract','prmTailor','prmCover','prmScreening','prmQuick','prmForm'] as const;
+        const LEGACY_KEYS=['prmExtract','prmTailor','prmSummary','prmCover','prmScreening','prmQuick','prmForm'] as const;
         const cleaned:Record<string,unknown>={...LLM_DEFAULTS,...stored};
         let stripped=false;
-        for(const k of LEGACY_KEYS){if(k in cleaned){delete cleaned[k];stripped=true}}
-        setLlm(p=>({...p,...(cleaned as Partial<LlmConfig>)}));
+        for(const k of LEGACY_KEYS){
+          if(k in cleaned){
+            delete cleaned[k];
+            stripped=true;
+          }
+        }
+        setLlm((p)=>{return{...p,...(cleaned as Partial<LlmConfig>)};});
         if(stripped)browser.storage.local.set({llmConfig:cleaned});
       }
     });
   },[]);
 
   const [saving,setSaving]=useState(false);
-  const updateP=useCallback((k:keyof ProfileData,v:string|number)=>{ setProfile(p=>({...p,[k]:v})); },[]);
-  const updateLlm=useCallback((k:keyof LlmConfig,v:string)=>{ setLlm(l=>({...l,[k]:v})); },[]);
+  const updateP=useCallback((k:keyof ProfileData,v:string|number)=>{ setProfile((p)=>{return{...p,[k]:v};}); },[]);
+  const updateLlm=useCallback((k:keyof LlmConfig,v:string)=>{ setLlm((l)=>{return{...l,[k]:v};}); },[]);
   const doSave=useCallback(()=>{
     setSaving(true);
     const start=Date.now();
@@ -315,15 +160,15 @@ export function OptionsApp(): preact.JSX.Element {
 
       {/* ── Tab: LLM Provider ── */}
       {settingsTab==='llm'&&<div>
-        <div style={{marginBottom:'12px'}}><label style={fieldLabel}>API URL</label><input type="text" value={llm.apiUrl} onInput={e=>{ updateLlm('apiUrl',(e.target as HTMLInputElement).value); }} placeholder="https://api.deepseek.com/v1" style={inputStyle}/></div>
-        <div style={{marginBottom:'12px'}}><label style={fieldLabel}>API Key</label><input type="password" value={llm.apiKey} onInput={e=>{ updateLlm('apiKey',(e.target as HTMLInputElement).value); }} placeholder="sk-..." style={inputStyle}/></div>
-        <div style={{marginBottom:'12px'}}><label style={fieldLabel}>Model</label><input type="text" value={llm.model} onInput={e=>{ updateLlm('model',(e.target as HTMLInputElement).value); }} placeholder="deepseek-chat" style={inputStyle}/></div>
+        <div style={{marginBottom:'12px'}}><label style={fieldLabel}>API URL</label><input type="text" value={llm.apiUrl} onInput={(e)=>{ updateLlm('apiUrl',(e.target as HTMLInputElement).value); }} placeholder="https://api.deepseek.com" style={inputStyle}/></div>
+        <div style={{marginBottom:'12px'}}><label style={fieldLabel}>API Key</label><input type="password" value={llm.apiKey} onInput={(e)=>{ updateLlm('apiKey',(e.target as HTMLInputElement).value); }} placeholder="sk-..." style={inputStyle}/></div>
+        <div style={{marginBottom:'12px'}}><label style={fieldLabel}>Model</label><input type="text" value={llm.model} onInput={(e)=>{ updateLlm('model',(e.target as HTMLInputElement).value); }} placeholder="deepseek-chat" style={inputStyle}/></div>
       </div>}
 
       {/* ── Tab: Resume & Profile ── */}
       {settingsTab==='profile'&&<div>
         <div style={sectionTitle}>📄 Resume (Markdown)</div>
-        <textarea value={llm.resume} onInput={e=>{ updateLlm('resume',(e.target as HTMLTextAreaElement).value); }} placeholder="Paste your full resume in markdown here..." style={{width:'100%',height:'150px',padding:'10px 12px',fontSize:'12px',border:`1px solid ${colors.border}`,borderRadius:radii.sm,resize:'vertical',fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box',outline:'none',color:colors.textPrimary,backgroundColor:colors.surface}}/>
+        <textarea value={llm.resume} onInput={(e)=>{ updateLlm('resume',(e.target as HTMLTextAreaElement).value); }} placeholder="Paste your full resume in markdown here..." style={{width:'100%',height:'150px',padding:'10px 12px',fontSize:'12px',border:`1px solid ${colors.border}`,borderRadius:radii.sm,resize:'vertical',fontFamily:'"JetBrains Mono",monospace',boxSizing:'border-box',outline:'none',color:colors.textPrimary,backgroundColor:colors.surface}}/>
         <div style={{marginTop:'8px',display:'flex',gap:'8px',alignItems:'center',marginBottom:'20px'}}>
           <button onClick={doParseResume} disabled={parseStatus==='parsing'} style={{padding:'6px 14px',fontSize:'12px',fontWeight:600,backgroundColor:parseStatus==='parsing'?colors.accentHover:colors.accent,color:colors.textWhite,border:'none',borderRadius:radii.sm,cursor:parseStatus==='parsing'?'not-allowed':'pointer',transition:'all 150ms'}}>
             {parseStatus==='parsing'?'Parsing resume...':'Auto-fill Profile'}
@@ -334,7 +179,26 @@ export function OptionsApp(): preact.JSX.Element {
 
         <div style={sectionTitle}>👤 Profile Fields</div>
         <div style={{maxHeight:'none'}}>
-          {PROFILE_FIELDS.map(f=>(<div key={f.key} style={{marginBottom:'10px'}}><label style={fieldLabel}>{f.label}</label><input type={f.type} value={profile[f.key]} onInput={e=>{const v=(e.target as HTMLInputElement).value;updateP(f.key,f.type==='number'?(v===''?0:parseInt(v,10)||0):v)}} placeholder={f.placeholder} style={inputStyle}/></div>))}
+          {PROFILE_FIELDS.map((f)=>{
+            const v = profile[f.key];
+            const str = typeof v === 'number' ? String(v) : v;
+            return (
+              <div key={f.key} style={{marginBottom:'10px'}}>
+                <label style={fieldLabel}>{f.label}</label>
+                <input
+                  type={typeof v === 'number' ? 'number' : 'text'}
+                  value={str}
+                  onInput={(e)=>{
+                    const raw = (e.target as HTMLInputElement).value;
+                    if (typeof v === 'number') updateP(f.key, raw === '' ? 0 : (parseInt(raw, 10) || 0));
+                    else updateP(f.key, raw);
+                  }}
+                  placeholder={f.placeholder ?? ''}
+                  style={inputStyle}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>}
 
@@ -343,7 +207,7 @@ export function OptionsApp(): preact.JSX.Element {
         <p style={{fontSize:'11px',color:colors.textSecondary,margin:'0 0 12px',lineHeight:1.5}}>
           Base prompts are locked to keep the JSON output structure stable. You can add short guidance per template (tone, emphasis, length, things to avoid). The runner injects your text into a fixed <code style={{backgroundColor:colors.accentBg,color:colors.textPrimary,padding:'0 4px',borderRadius:'3px',fontSize:'11px'}}>User Custom Instructions</code> slot before the data section.
         </p>
-        {PROMPT_SLOTS.map(slot=>{
+        {SLOTS.map((slot)=>{
           const isOpen=expandedSlot===slot.key;
           const addValue=llm[slot.key];
           return(
@@ -359,7 +223,7 @@ export function OptionsApp(): preact.JSX.Element {
                   <span>Custom instructions <span style={slotTag}>(appended only)</span></span>
                   <span style={{fontSize:'10px',fontWeight:400,color:colors.textMuted}}>{addValue.length}/2000</span>
                 </label>
-                <textarea value={addValue} onInput={e=>{const v=(e.target as HTMLTextAreaElement).value;if(v.length<=2000)updateLlm(slot.key,v)}} placeholder={`Optional. Example: "Keep the summary under 80 words and avoid the word 'passionate'."`} style={customArea}/>
+                <textarea value={addValue} onInput={(e)=>{const v=(e.target as HTMLTextAreaElement).value;if(v.length<=2000)updateLlm(slot.key,v)}} placeholder={`Optional. Example: "Keep the summary under 80 words and avoid the word 'passionate'."`} style={customArea}/>
               </div>
             </div>
           );

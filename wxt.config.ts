@@ -46,15 +46,10 @@ const SUPPRESS_WARNINGS = {
 } as const;
 
 export default defineConfig({
+  srcDir: '.',
   manifest,
   suppressWarnings: SUPPRESS_WARNINGS,
   vite: () => ({
     plugins: [preact()],
-    resolve: {
-      alias: {
-        '@popup': resolve(__dirname, 'src/popup'),
-        '@options': resolve(__dirname, 'src/options'),
-      },
-    },
   }),
 });

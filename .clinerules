@@ -76,7 +76,7 @@
 - NEVER log API keys, tokens, or passwords
 - No secrets in code — env vars only
 - Content scripts scoped to job description containers, never full page DOM
-- Use Chrome extension APIs (`chrome.storage`, `chrome.runtime`, `chrome.tabs`) for persistence and messaging
+- Use browser extension APIs (`browser.storage`, `browser.runtime`, `browser.tabs`) for persistence and messaging — the build targets Chrome/Firefox/Safari via WXT, which exposes the same surface across browsers
 - Background service worker handles all long-lived tasks and API communication
 
 ## Git (NON-NEGOTIABLE)
