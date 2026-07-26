@@ -22,11 +22,22 @@ export interface ProfileData {
   readonly remotePreference: string;
 }
 
+export interface ResumeEntry {
+  readonly id: string;
+  readonly name: string;
+  readonly content: string;
+  readonly profile: ProfileData;
+  readonly isDefault: boolean;
+  readonly createdAt: number;
+  readonly updatedAt: number;
+}
+
 export interface LlmConfig {
   readonly apiUrl: string;
   readonly apiKey: string;
   readonly model: string;
-  readonly resume: string;
+  readonly activeResumeId: string;
+  readonly resumes: readonly ResumeEntry[];
   readonly prmExtractAdd: string;
   readonly prmSummaryAdd: string;
   readonly prmCoverAdd: string;
@@ -59,11 +70,25 @@ export const PROFILE_DEFAULTS: ProfileData = {
   remotePreference: '',
 };
 
+export function createResumeEntry(name: string, content: string, profile?: Partial<ProfileData>): ResumeEntry {
+  const now = Date.now();
+  return {
+    id: `resume_${now}_${Math.random().toString(36).slice(2, 8)}`,
+    name,
+    content,
+    profile: { ...PROFILE_DEFAULTS, ...(profile ?? {}) },
+    isDefault: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
 export const LLM_DEFAULTS: LlmConfig = {
   apiUrl: 'https://api.deepseek.com',
   apiKey: '',
   model: 'deepseek-chat',
-  resume: '',
+  activeResumeId: '',
+  resumes: [],
   prmExtractAdd: '',
   prmSummaryAdd: '',
   prmCoverAdd: '',

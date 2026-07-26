@@ -1,10 +1,11 @@
 import { render } from 'preact';
-import { useState } from 'preact/hooks';
+import { useCallback, useEffect, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
 import { colors, fontFamily } from './theme';
 import { CopilotView } from './views/CopilotView';
 import { PresetsView } from './views/PresetsView';
 import { SettingsView } from './views/SettingsView';
+import type { ResumeEntry } from '../utils/settings-schema';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -35,6 +36,81 @@ function Container(p: { readonly children: preact.ComponentChildren }): JSX.Elem
       }}
     >
       {p.children}
+    </div>
+  );
+}
+
+function ResumeBar(): JSX.Element {
+  const [resumes, setResumes] = useState<readonly ResumeEntry[]>([]);
+  const [activeId, setActiveId] = useState('');
+
+  useEffect(() => {
+    browser.storage.local.get(['llmConfig'], (result) => {
+      const cfg = (result as Record<string, unknown>)?.llmConfig;
+      if (cfg && typeof cfg === 'object' && cfg !== null) {
+        const c = cfg as Record<string, unknown>;
+        const entries = c['resumes'];
+        if (Array.isArray(entries)) {
+          const typed: ResumeEntry[] = entries.filter(
+            (e): e is ResumeEntry => typeof e === 'object' && e !== null && typeof (e as ResumeEntry).id === 'string',
+          );
+          setResumes(typed);
+        }
+        const active = c['activeResumeId'];
+        if (typeof active === 'string') setActiveId(active);
+      }
+    });
+  }, []);
+
+  const handleChange = useCallback((id: string) => {
+    setActiveId(id);
+    browser.storage.local.get(['llmConfig'], (result) => {
+      const cfg = (result as Record<string, unknown>)?.llmConfig;
+      if (cfg && typeof cfg === 'object' && cfg !== null) {
+        const next = { ...(cfg as Record<string, unknown>), activeResumeId: id };
+        browser.storage.local.set({ llmConfig: next });
+      }
+    });
+  }, []);
+
+  if (resumes.length <= 1) return <div />;
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        padding: '6px 14px',
+        backgroundColor: colors.accentBg,
+        borderBottom: `1px solid ${colors.accentBorder}`,
+      }}
+    >
+      <span style={{ fontSize: '10px', fontWeight: 600, color: colors.accent, whiteSpace: 'nowrap' }}>
+        Resume
+      </span>
+      <select
+        value={activeId}
+        onChange={(e) => { handleChange((e.target as HTMLSelectElement).value); }}
+        style={{
+          flex: 1,
+          padding: '4px 6px',
+          fontSize: '11px',
+          border: `1px solid ${colors.accentBorder}`,
+          borderRadius: '4px',
+          backgroundColor: colors.bg,
+          color: colors.textPrimary,
+          fontFamily,
+          outline: 'none',
+          minWidth: 0,
+        }}
+      >
+        {resumes.map((r) => (
+          <option key={r.id} value={r.id}>
+            {r.name}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
@@ -121,9 +197,10 @@ export function App(): JSX.Element {
   const [view, setView] = useState<ViewKey>('copilot');
 
   return (
-    <Container>
-      <ShellHeader />
-      <TabBar active={view} onChange={setView} />
+        <Container>
+          <ResumeBar />
+          <ShellHeader />
+          <TabBar active={view} onChange={setView} />
       <div
         style={{
           flex: 1,

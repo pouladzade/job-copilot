@@ -24,6 +24,67 @@ const PLACEHOLDER_BLACKLIST = new Set([
   'search...',
 ]);
 
+// Labels that indicate UI chrome (buttons, toggles, search boxes) not real form fields
+const LABEL_CHROME_BLACKLIST = new Set([
+  'toggle flyout',
+  'search',
+  'clear search',
+  'clear selections',
+  'remove file',
+  'change country',
+  'clear',
+  'close',
+  'open',
+  'expand',
+  'collapse',
+  'show',
+  'hide',
+  'menu',
+  'more',
+  'less',
+  'add',
+  'delete',
+  'remove',
+  'edit',
+  'cancel',
+  'done',
+  'apply',
+  'filter',
+  'sort',
+  'previous',
+  'next',
+  'back',
+  'forward',
+]);
+
+function isUiChromeButton(element: Element): boolean {
+  const tag = element.tagName.toLowerCase();
+  if (tag !== 'button') return false;
+
+  const type = element.getAttribute('type') ?? '';
+  // type="button" is explicitly a UI button, not a submit
+  if (type === 'button') return true;
+
+  const ariaLabel = (element.getAttribute('aria-label') ?? '').toLowerCase().trim();
+  if (LABEL_CHROME_BLACKLIST.has(ariaLabel)) return true;
+
+  const text = (element.textContent ?? '').toLowerCase().trim();
+  if (LABEL_CHROME_BLACKLIST.has(text)) return true;
+
+  return false;
+}
+
+function isChromeLabel(label: string): boolean {
+  const normalized = label.toLowerCase().trim();
+  if (normalized === '') return false;
+
+  for (const chrome of LABEL_CHROME_BLACKLIST) {
+    if (normalized === chrome || normalized.startsWith(chrome + ' ')) return true;
+  }
+
+  return false;
+}
+
 type FieldType = ScrapedField['type'];
 
 interface ScrapeResult {
@@ -311,6 +372,7 @@ export function scrapeFormFieldsWithMap(): ScrapeResult {
 
       if (isSubmitElement(control)) continue;
       if (!isVisible(control)) continue;
+      if (isUiChromeButton(control)) continue;
 
       // Skip file uploads — these need real files, not text matching.
       if (control.tagName.toLowerCase() === 'input' && (control as HTMLInputElement).type === 'file') continue;
@@ -332,8 +394,12 @@ export function scrapeFormFieldsWithMap(): ScrapeResult {
         break;
       }
 
-      const fieldId = `field_${fieldCounter}`;
       const label = resolveLabel(control);
+
+      // Skip fields with chrome-only labels (e.g. "Toggle flyout", "Search")
+      if (isChromeLabel(label)) continue;
+
+      const fieldId = `field_${fieldCounter}`;
       const maxLength = parseInt((control as HTMLInputElement).getAttribute('maxlength') ?? '0', 10) || 5000;
       const options = extractOptions(control);
       const selector = buildSelector(control);

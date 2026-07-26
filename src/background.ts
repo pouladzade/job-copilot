@@ -3,9 +3,9 @@
 // and the JSON schema. The user's only editable channel is the matching
 // `prm*Add` custom-instructions field, which the runner injects into the
 // `{{customInstructions}}` slot below.
-import { getProfile, profileToContext, deterministicMatch } from './utils/profile-match';
+import { profileToContext, deterministicMatch, getProfile } from './utils/profile-match';
 import { DEFAULT_PROMPTS } from './utils/prompt-templates';
-import { LLM_DEFAULTS, type LlmConfig } from './utils/settings-schema';
+import { LLM_DEFAULTS, type LlmConfig, type ResumeEntry, createResumeEntry, PROFILE_DEFAULTS } from './utils/settings-schema';
 
 const EMPTY_CUSTOM = '(none)';
 
@@ -18,28 +18,73 @@ function estimateCost(model:string,promptTokens:number,completionTokens:number):
 }
 
 async function getLlmConfig():Promise<LlmConfig>{
-  const r=await browser.storage.local.get('llmConfig');
+  const r=await browser.storage.local.get(['llmConfig','profile']);
   const s=r as Record<string,unknown>;
   const c=s.llmConfig;
-  const pick=(k:keyof LlmConfig,d:string):string=>{
+  const pickStr=(k:keyof LlmConfig,d:string):string=>{
     if(c&&typeof c==='object'&&c!==null){
       const v=(c as Record<string,unknown>)[k];
       return typeof v==='string'?v:d;
     }
     return d;
   };
-  return {
-    apiUrl:pick('apiUrl',LLM_DEFAULTS.apiUrl),
-    apiKey:pick('apiKey',LLM_DEFAULTS.apiKey),
-    model:pick('model',LLM_DEFAULTS.model),
-    resume:pick('resume',LLM_DEFAULTS.resume),
-    prmExtractAdd:pick('prmExtractAdd',LLM_DEFAULTS.prmExtractAdd),
-    prmSummaryAdd:pick('prmSummaryAdd',LLM_DEFAULTS.prmSummaryAdd),
-    prmCoverAdd:pick('prmCoverAdd',LLM_DEFAULTS.prmCoverAdd),
-    prmQuickAdd:pick('prmQuickAdd',LLM_DEFAULTS.prmQuickAdd),
-    prmFormAdd:pick('prmFormAdd',LLM_DEFAULTS.prmFormAdd),
-    prmReplyAdd:pick('prmReplyAdd',LLM_DEFAULTS.prmReplyAdd),
+  const pickArr=(k:keyof LlmConfig):readonly ResumeEntry[]=>{
+    if(c&&typeof c==='object'&&c!==null){
+      const v=(c as Record<string,unknown>)[k];
+      if(Array.isArray(v)) return v as ResumeEntry[];
+    }
+    return [];
   };
+
+  // Migration: old schema had `resume` string + separate `profile` object.
+  // Convert to new multi-resume schema on first load.
+  let resumes = pickArr('resumes');
+  let activeResumeId = pickStr('activeResumeId',LLM_DEFAULTS.activeResumeId);
+  if(resumes.length===0){
+    const oldResume=typeof (c as Record<string,unknown>|null)?.['resume']==='string'?((c as Record<string,unknown>)['resume'] as string):'';
+    const oldProfile=s.profile&&typeof s.profile==='object'&&s.profile!==null?(s.profile as Record<string,unknown>):{};
+    const migratedProfile={...PROFILE_DEFAULTS} as Record<string,unknown>;
+    for(const k of Object.keys(PROFILE_DEFAULTS)){
+      const v=(oldProfile as Record<string,unknown>)[k];
+      if(v!==undefined&&v!==null&&v!=='') migratedProfile[k]=v;
+    }
+    const entry=createResumeEntry('Default',oldResume,(migratedProfile as unknown) as typeof PROFILE_DEFAULTS);
+    ((entry as unknown) as Record<string,unknown>)['isDefault']=true;
+    resumes=[entry];
+    activeResumeId=entry.id;
+    // Persist migration so it doesn't run again
+    const migratedCfg={
+      ...(c as Record<string,unknown>||{}),
+      resume:undefined,
+      profile:undefined,
+      activeResumeId,
+      resumes,
+    };
+    delete migratedCfg.resume;
+    delete migratedCfg.profile;
+    browser.storage.local.set({ llmConfig:migratedCfg }).catch(()=>{/* best effort */});
+  }
+
+  return {
+    apiUrl:pickStr('apiUrl',LLM_DEFAULTS.apiUrl),
+    apiKey:pickStr('apiKey',LLM_DEFAULTS.apiKey),
+    model:pickStr('model',LLM_DEFAULTS.model),
+    activeResumeId,
+    resumes,
+    prmExtractAdd:pickStr('prmExtractAdd',LLM_DEFAULTS.prmExtractAdd),
+    prmSummaryAdd:pickStr('prmSummaryAdd',LLM_DEFAULTS.prmSummaryAdd),
+    prmCoverAdd:pickStr('prmCoverAdd',LLM_DEFAULTS.prmCoverAdd),
+    prmQuickAdd:pickStr('prmQuickAdd',LLM_DEFAULTS.prmQuickAdd),
+    prmFormAdd:pickStr('prmFormAdd',LLM_DEFAULTS.prmFormAdd),
+    prmReplyAdd:pickStr('prmReplyAdd',LLM_DEFAULTS.prmReplyAdd),
+  };
+}
+
+async function getActiveResume():Promise<{content:string;profile:Record<string,unknown>}|null>{
+  const cfg=await getLlmConfig();
+  const entry=cfg.resumes.find((r)=>r.id===cfg.activeResumeId);
+  if(!entry) return null;
+  return{content:entry.content,profile:(entry.profile as unknown) as Record<string,unknown>};
 }
 
 function isLocalUrl(url:string):boolean{
@@ -204,12 +249,14 @@ async function resolveJob(ex:ExtractionPayload,cfg:LlmConfig):Promise<{job:Resol
 
 async function handleSummary(payload:{extraction:ExtractionPayload},sendResponse:(r:unknown)=>void):Promise<void>{
   const cfg=await getLlmConfig();
+  const active=await getActiveResume();
+  const resumeContent=active?.content??'';
   if(!isLocalUrl(cfg.apiUrl)&&cfg.apiKey===''){sendResponse({success:false,error:'LLM API key not configured. Go to Options (right-click extension → Options).'});return}
-  if(cfg.resume===''){sendResponse({success:false,error:'Resume not configured. Go to Options (right-click extension → Options).'});return}
+  if(resumeContent===''){sendResponse({success:false,error:'Resume not configured. Go to Options (right-click extension → Options).'});return}
   try{
     const{job,err}=await resolveJob(payload.extraction,cfg);
     if(!job){sendResponse({success:false,...(err??{error:'No job data',debug:''})});return}
-    const r=await callLlm(composePrompt(DEFAULT_PROMPTS.prmSummary,cfg.prmSummaryAdd).replace('{{jobDescription}}',job.description).replace('{{resumeContent}}',cfg.resume));
+    const r=await callLlm(composePrompt(DEFAULT_PROMPTS.prmSummary,cfg.prmSummaryAdd).replace('{{jobDescription}}',job.description).replace('{{resumeContent}}',resumeContent));
     const summary=typeof r.data.resumeSummary==='string'?r.data.resumeSummary:'';
     if(summary===''){sendResponse({success:false,error:'Model returned an empty summary.'});return}
     sendResponse({success:true,data:{
@@ -225,12 +272,14 @@ async function handleSummary(payload:{extraction:ExtractionPayload},sendResponse
 
 async function handleCoverLetter(payload:{extraction:ExtractionPayload},sendResponse:(r:unknown)=>void):Promise<void>{
   const cfg=await getLlmConfig();
+  const active=await getActiveResume();
+  const resumeContent=active?.content??'';
   if(!isLocalUrl(cfg.apiUrl)&&cfg.apiKey===''){sendResponse({success:false,error:'LLM API key not configured. Go to Options (right-click extension → Options).'});return}
-  if(cfg.resume===''){sendResponse({success:false,error:'Resume not configured. Go to Options (right-click extension → Options).'});return}
+  if(resumeContent===''){sendResponse({success:false,error:'Resume not configured. Go to Options (right-click extension → Options).'});return}
   try{
     const{job,err}=await resolveJob(payload.extraction,cfg);
     if(!job){sendResponse({success:false,...(err??{error:'No job data',debug:''})});return}
-    const r=await callLlm(composePrompt(DEFAULT_PROMPTS.prmCover,cfg.prmCoverAdd).replace('{{jobDescription}}',job.description).replace('{{resumeContent}}',cfg.resume));
+    const r=await callLlm(composePrompt(DEFAULT_PROMPTS.prmCover,cfg.prmCoverAdd).replace('{{jobDescription}}',job.description).replace('{{resumeContent}}',resumeContent));
     const cover=typeof r.data.coverLetter==='string'?r.data.coverLetter:'';
     if(cover===''){sendResponse({success:false,error:'Model returned an empty cover letter.'});return}
     sendResponse({success:true,data:{
@@ -246,10 +295,12 @@ async function handleCoverLetter(payload:{extraction:ExtractionPayload},sendResp
 
 async function handleQuickMatch(pageText:string,sendResponse:(r:unknown)=>void):Promise<void>{
   const cfg=await getLlmConfig();
+  const active=await getActiveResume();
+  const resumeContent=active?.content??'';
   if(!isLocalUrl(cfg.apiUrl)&&cfg.apiKey===''){sendResponse({success:false,error:'API key not configured.'});return}
-  if(cfg.resume===''){sendResponse({success:false,error:'Resume not configured.'});return}
+  if(resumeContent===''){sendResponse({success:false,error:'Resume not configured.'});return}
   try{
-    const r=await callLlm(composePrompt(DEFAULT_PROMPTS.prmQuick,cfg.prmQuickAdd).replace('{{jobDescription}}',pageText.slice(0,10000)).replace('{{resumeContent}}',cfg.resume));
+    const r=await callLlm(composePrompt(DEFAULT_PROMPTS.prmQuick,cfg.prmQuickAdd).replace('{{jobDescription}}',pageText.slice(0,10000)).replace('{{resumeContent}}',resumeContent));
     sendResponse({success:true,data:{
       score:typeof r.data.score==='number'?r.data.score:5,
       verdict:typeof r.data.verdict==='string'?r.data.verdict:'Moderate Match',
@@ -263,8 +314,10 @@ async function handleFormMatch(payload:{fields:{id:string;label:string;type:stri
   const fields = payload.fields;
   const sourceUrl = payload.sourceUrl ?? '';
   const cfg=await getLlmConfig();
+  const active=await getActiveResume();
+  const resumeContent=active?.content??'';
   if(!isLocalUrl(cfg.apiUrl)&&cfg.apiKey===''){sendResponse({success:false,error:'API key not configured.'});return}
-  const profile = await getProfile();
+  const profile = active?.profile ?? await getProfile();
 
   let jobTitle = '';
   let jobCompany = '';
@@ -304,7 +357,7 @@ async function handleFormMatch(payload:{fields:{id:string;label:string;type:stri
 
   if (llmFields.length > 0) {
     try {
-      const ctx = `## Candidate Profile\n${profileToContext(profile)}\n\n## Job\nTitle: ${jobTitle}\nCompany: ${jobCompany}\nPage URL: ${sourceUrl}\n\n## Resume\n${cfg.resume.slice(0, 3000)}`;
+      const ctx = `## Candidate Profile\n${profileToContext(profile)}\n\n## Job\nTitle: ${jobTitle}\nCompany: ${jobCompany}\nPage URL: ${sourceUrl}\n\n## Resume\n${resumeContent.slice(0, 3000)}`;
       const r = await callLlm(composePrompt(DEFAULT_PROMPTS.prmForm,cfg.prmFormAdd).replace('{{candidateContext}}',ctx).replace('{{fieldsJson}}',JSON.stringify(llmFields, null, 2)));
       const valuesRaw = r.data.values;
       if (Array.isArray(valuesRaw)) {
@@ -343,14 +396,16 @@ async function handleFormMatch(payload:{fields:{id:string;label:string;type:stri
 
 async function handleReply(pageText:string,replyPrompt:string,sendResponse:(r:unknown)=>void):Promise<void>{
   const cfg=await getLlmConfig();
+  const active=await getActiveResume();
+  const resumeContent=active?.content??'';
   if(!isLocalUrl(cfg.apiUrl)&&cfg.apiKey===''){sendResponse({success:false,error:'API key not configured.'});return}
-  if(cfg.resume===''){sendResponse({success:false,error:'Resume not configured.'});return}
+  if(resumeContent===''){sendResponse({success:false,error:'Resume not configured.'});return}
   try{
     const prompt=composePrompt(DEFAULT_PROMPTS.prmReply,cfg.prmReplyAdd)
       .replace('{{userIntent}}',replyPrompt)
       .replace('{{pageText}}',pageText.slice(0,5000))
       .replace('{{jobDescription}}','')
-      .replace('{{resumeContent}}',cfg.resume.slice(0,2000));
+      .replace('{{resumeContent}}',resumeContent.slice(0,2000));
     const r=await callLlm(prompt);
     let reply=typeof r.data.reply==='string'?r.data.reply:'';
     if(reply==='')reply=typeof r.data.response==='string'?r.data.response:'';
@@ -364,8 +419,10 @@ async function handleReply(pageText:string,replyPrompt:string,sendResponse:(r:un
 
 async function handleParseResume(sendResponse:(r:unknown)=>void):Promise<void>{
   const cfg=await getLlmConfig();
+  const active=await getActiveResume();
+  const resumeContent=active?.content??'';
   if(!isLocalUrl(cfg.apiUrl)&&cfg.apiKey===''){sendResponse({success:false,error:'API key not configured.'});return}
-  if(cfg.resume===''){sendResponse({success:false,error:'Resume not configured. Paste your resume first.'});return}
+  if(resumeContent===''){sendResponse({success:false,error:'Resume not configured. Paste your resume first.'});return}
   const profileFields=['fullName','contactEmail','contactPhone','city','state','linkedin','portfolioUrl','githubUrl','workAuthorization','salaryExpectations','noticePeriod','willingToRelocate','yearsOfExperience','currentTitle','currentCompany','highestDegree','university','fieldOfStudy','desiredRole','preferredLocation','remotePreference'];
   try{
     const prompt=`## System
@@ -385,7 +442,7 @@ You are a resume parser. Extract structured profile fields from the candidate's 
 {"fullName":"string","contactEmail":"string","contactPhone":"string","city":"string","state":"string","linkedin":"string","portfolioUrl":"string","githubUrl":"string","workAuthorization":"string","salaryExpectations":"string","noticePeriod":"string","willingToRelocate":"string","yearsOfExperience":0,"currentTitle":"string","currentCompany":"string","highestDegree":"string","university":"string","fieldOfStudy":"string","desiredRole":"string","preferredLocation":"string","remotePreference":"string"}
 
 ## Resume
-${cfg.resume.slice(0, 8000)}`;
+${resumeContent.slice(0, 8000)}`;
     const r=await callLlm(prompt);
     const profile:Record<string,unknown>={};
     for(const f of profileFields){
@@ -393,6 +450,15 @@ ${cfg.resume.slice(0, 8000)}`;
       if(f==='yearsOfExperience'){profile[f]=typeof val==='number'?val:typeof val==='string'?parseInt(val,10)||0:0}
       else{profile[f]=typeof val==='string'?val:''}
     }
+    // Update the active resume's profile with parsed data
+    const updatedResumes = cfg.resumes.map((entry) =>
+      entry.id === cfg.activeResumeId
+        ? { ...entry, profile: (profile as unknown) as typeof PROFILE_DEFAULTS, updatedAt: Date.now() }
+        : entry,
+    );
+    browser.storage.local.set({
+      llmConfig: { ...cfg, resumes: updatedResumes },
+    }).catch(() => { /* best effort */ });
     sendResponse({success:true,data:{profile,tokenUsage:r.usage}});
   }catch(e:unknown){sendResponse({success:false,error:e instanceof Error?e.message:'Resume parsing failed'})}
 }

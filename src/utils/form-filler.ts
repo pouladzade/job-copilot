@@ -115,26 +115,53 @@ export function fillField(field: ScrapedField, value: string): void {
 
     case 'select': {
       const select = element as HTMLSelectElement;
-      let matched = false;
+      const fv = finalValue.toLowerCase().trim();
+      let bestIndex = -1;
+      let bestScore = 0;
+
       for (let i = 0; i < select.options.length; i++) {
         const option = select.options[i];
         if (option === undefined) continue;
-        // Match against both text and value (case-insensitive)
-        if (
-          option.text.trim().toLowerCase() === finalValue.toLowerCase() ||
-          option.value.toLowerCase() === finalValue.toLowerCase()
-        ) {
-          select.selectedIndex = i;
-          dispatchEvents(element, 'select');
-          matched = true;
+        const text = option.text.trim().toLowerCase();
+        const val = option.value.toLowerCase();
+
+        // Exact match
+        if (text === fv || val === fv) {
+          bestIndex = i;
+          bestScore = 100;
           break;
         }
+
+        // Contains match (e.g. "Germany (+49)" contains "germany")
+        if (text.includes(fv) || fv.includes(text)) {
+          const score = 80;
+          if (score > bestScore) {
+            bestScore = score;
+            bestIndex = i;
+          }
+        }
+
+        // Word-start match (e.g. "DE" matches "Germany" via country code — not great but better than nothing)
+        const words = text.split(/\s+/);
+        for (const w of words) {
+          if (w === fv || w.startsWith(fv) || fv.startsWith(w)) {
+            const score = 60;
+            if (score > bestScore) {
+              bestScore = score;
+              bestIndex = i;
+            }
+          }
+        }
       }
-      // Fallback: try to match first non-empty option if value doesn't match
-      if (!matched && select.options.length > 1) {
+
+      if (bestIndex >= 0) {
+        select.selectedIndex = bestIndex;
+        dispatchEvents(element, 'select');
+      } else if (select.options.length > 0 && fv !== '') {
+        // Last resort: pick first non-empty, non-placeholder option
         for (let i = 0; i < select.options.length; i++) {
           const option = select.options[i];
-          if (option !== undefined && option.value !== '' && finalValue !== '') {
+          if (option !== undefined && option.value !== '' && option.text.trim() !== '') {
             select.selectedIndex = i;
             dispatchEvents(element, 'select');
             break;
