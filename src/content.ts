@@ -32,7 +32,14 @@ browser.runtime.onMessage.addListener(
     if (message.type === 'ping') { sendResponse({ pong: true }); return false; }
     if (message.type === 'scrape') {
       const m = message as Record<string, unknown>;
-      handleScrape(sendResponse, m.kind as 'summary' | 'coverLetter' | undefined, m.quickMatch as boolean, m.reply as boolean, m.replyPrompt as string);
+      handleScrape(
+        sendResponse,
+        m.kind as 'summary' | 'coverLetter' | undefined,
+        m.quickMatch as boolean,
+        m.reply as boolean,
+        m.replyPrompt as string,
+        m.replyContext as { readonly resume: boolean; readonly page: boolean; readonly job: boolean } | undefined,
+      );
       return true;
     }
     if (message.type === 'fillForm') { handleFillForm(message.answers ?? [], sendResponse); return true; }
@@ -47,7 +54,14 @@ function deriveSourceSite(url: string): string {
   try { const h = new URL(url).hostname; const p = h.split('.'); return p.length >= 2 ? p.slice(-2).join('.') : h; } catch { return 'unknown'; }
 }
 
-async function handleScrape(sendResponse: (response: ScrapeResponse) => void, kind: 'summary' | 'coverLetter' | undefined = 'summary', quickMatch = false, reply = false, replyPrompt = ''): Promise<void> {
+async function handleScrape(
+  sendResponse: (response: ScrapeResponse) => void,
+  kind: 'summary' | 'coverLetter' | undefined = 'summary',
+  quickMatch = false,
+  reply = false,
+  replyPrompt = '',
+  replyContext?: { readonly resume: boolean; readonly page: boolean; readonly job: boolean },
+): Promise<void> {
   const currentUrl = window.location.href;
   const sourceSite = deriveSourceSite(currentUrl);
   const extraction: ExtractionResult = await extractPage(document, currentUrl);
@@ -57,7 +71,7 @@ async function handleScrape(sendResponse: (response: ScrapeResponse) => void, ki
   }
 
   if (reply) {
-    browser.runtime.sendMessage({ type: 'backend:reply', payload: { pageText: extraction.rawText.slice(0, 8000), replyPrompt } }, (r: BackendResponse) => {
+    browser.runtime.sendMessage({ type: 'backend:reply', payload: { pageText: extraction.rawText.slice(0, 8000), replyPrompt, jobDescription: extraction.description ?? '', replyContext } }, (r: BackendResponse) => {
       if (browser.runtime.lastError) { sendResponse({ success: false, error: browser.runtime.lastError.message ?? 'BG error' }); return; }
       if (!r.success) { sendResponse({ success: false, error: r.error, details: r.details, debug: `Source: ${sourceSite}\nExtraction: ${extraction.source}\nChars: ${extraction.rawText.length}` }); return; }
       sendResponse({ success: true, data: r.data });

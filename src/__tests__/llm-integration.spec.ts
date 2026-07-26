@@ -6,6 +6,11 @@
  */
 describe('LLM API Integration', () => {
   it('Ollama /v1/chat/completions works without auth', async () => {
+    if (process.env['RUN_OLLAMA_INTEGRATION'] !== '1') {
+      console.warn('Ollama integration disabled — set RUN_OLLAMA_INTEGRATION=1 to run');
+      return;
+    }
+
     const url = 'http://localhost:11434/v1';
     const model = 'qwen2.5-coder:7b';
 
@@ -29,7 +34,7 @@ describe('LLM API Integration', () => {
         temperature: 0.4,
         max_tokens: 100,
       }),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(4000),
     });
 
     console.log(`Ollama status: ${resp.status}`);
@@ -43,7 +48,7 @@ describe('LLM API Integration', () => {
   });
 
   it('Fake DeepSeek key returns 401/403', async () => {
-    const url = 'https://api.deepseek.com/v1';
+    const url = 'https://api.deepseek.com';
 
     const resp = await fetch(`${url}/chat/completions`, {
       method: 'POST',
@@ -58,6 +63,7 @@ describe('LLM API Integration', () => {
         temperature: 0.4,
         max_tokens: 100,
       }),
+      signal: AbortSignal.timeout(4000),
     });
 
     const body = await resp.text().catch(() => 'No body');
@@ -77,7 +83,7 @@ describe('LLM API Integration', () => {
       return;
     }
 
-    const url = 'https://api.deepseek.com/v1';
+    const url = 'https://api.deepseek.com';
 
     const resp = await fetch(`${url}/chat/completions`, {
       method: 'POST',
@@ -92,6 +98,7 @@ describe('LLM API Integration', () => {
         temperature: 0.4,
         max_tokens: 100,
       }),
+      signal: AbortSignal.timeout(4000),
     });
 
     if (!resp.ok) {

@@ -13,8 +13,8 @@ export interface ExtractionResult {
   ts: number;
 }
 
-const CACHE_PREFIX = 'extract:v1:';
-const cacheKey = (url: string): string => `${CACHE_PREFIX}${url}`;
+export const EXTRACTION_CACHE_PREFIX = 'extract:v1:';
+export const extractionCacheKey = (url: string): string => `${EXTRACTION_CACHE_PREFIX}${url}`;
 
 function stripHtml(html: string): string {
   return html
@@ -172,7 +172,7 @@ export function extractWithTreeWalker(doc: Document): string {
 
 export async function getCachedExtraction(url: string): Promise<ExtractionResult | null> {
   try {
-    const key = cacheKey(url);
+    const key = extractionCacheKey(url);
     const stored = await browser.storage.session.get(key);
     const v = stored?.[key];
     if (v && typeof v === 'object') return v as ExtractionResult;
@@ -182,7 +182,7 @@ export async function getCachedExtraction(url: string): Promise<ExtractionResult
 
 export async function setCachedExtraction(result: ExtractionResult): Promise<void> {
   try {
-    await browser.storage.session.set({ [cacheKey(result.url)]: result });
+    await browser.storage.session.set({ [extractionCacheKey(result.url)]: result });
   } catch { /* quota errors must not break extraction */ }
 }
 
