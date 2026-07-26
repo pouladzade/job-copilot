@@ -1,7 +1,7 @@
-# AI Job Copilot
+# Job Copilot
 
 [![CI](https://github.com/pouladzade/job-hunter-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/pouladzade/job-hunter-agent/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/pouladzade/job-hunter-agent/branch/main/graph/badge.svg)](https://codecov.io/gh/pouladzade/job-hunter-agent)
+[![codecov](https://codecov.io/github/pouladzade/job-copilot/graph/badge.svg?token=ZPVGLNZQVW)](https://codecov.io/github/pouladzade/job-copilot)
 [![Release](https://img.shields.io/github/v/release/pouladzade/job-hunter-agent?color=%238B6DFF)](https://github.com/pouladzade/job-hunter-agent/releases)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-orange)](https://developer.chrome.com/docs/extensions/mv3/intro/)
