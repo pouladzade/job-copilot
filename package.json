@@ -1,6 +1,7 @@
 {
   "name": "job-hunter-extension",
   "version": "0.1.0",
+  "author": "pouladzade <pouladzade@gmail.com>",
   "private": true,
   "type": "module",
   "scripts": {
