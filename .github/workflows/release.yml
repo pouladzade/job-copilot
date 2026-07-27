@@ -51,10 +51,15 @@ jobs:
           pnpm wxt zip
           pnpm wxt zip -b firefox --mv3
           pnpm wxt zip -b safari --mv3
+          echo "--- Output files ---"
+          ls -la .output/*.zip || true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: "v${VERSION}"
-          files: .output/job-hunter-extension-*.zip
+          files: |
+            .output/job-hunter-extension-*-chrome.zip
+            .output/job-hunter-extension-*-firefox.zip
+            .output/job-hunter-extension-*-safari.zip
           generate_release_notes: true
