@@ -12,6 +12,10 @@
 
 A browser extension that scrapes any job posting, tailors your application with AI, fills web forms, and crafts message replies — all without ever submitting anything automatically.
 
+
+![Popup with Resume selector](docs/screenshots/copilot-idle.png)
+
+
 **No backend. No database. No Docker.** Everything runs in your browser. Your API key, resume, and profile stay in the extension's local storage. The extension works on **any job board** — LinkedIn, Greenhouse, Lever, Ashby, Personio, Workday, Indeed, Wellfound, company career pages, etc.
 
 ---
