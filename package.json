@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "wxt",
-    "build:chrome": "wxt build",
-    "build:firefox": "wxt build -b firefox --mv3",
-    "build:safari": "wxt build -b safari --mv3",
+    "build:chrome": "wxt build && node scripts/patch-manifest.cjs chrome-mv3",
+    "build:firefox": "wxt build -b firefox --mv3 && node scripts/patch-manifest.cjs firefox-mv3",
+    "build:safari": "wxt build -b safari --mv3 && node scripts/patch-manifest.cjs safari-mv3",
     "build": "pnpm build:chrome && pnpm build:firefox && pnpm build:safari",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",

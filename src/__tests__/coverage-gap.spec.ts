@@ -510,7 +510,8 @@ describe('settings-schema', () => {
   it('LLM_DEFAULTS has all config fields', () => {
     expect(LLM_DEFAULTS.apiUrl).toBe('https://api.deepseek.com');
     expect(LLM_DEFAULTS.model).toBe('deepseek-chat');
-    expect(LLM_DEFAULTS.resume).toBe('');
+    expect(LLM_DEFAULTS.activeResumeId).toBe('');
+    expect(LLM_DEFAULTS.resumes).toEqual([]);
   });
 
   it('PROMPT_SLOTS has 6 slots', () => {

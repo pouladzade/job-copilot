@@ -3,7 +3,7 @@ import type { UserManifestFn } from 'wxt';
 import preact from '@preact/preset-vite';
 import { resolve } from 'path';
 
-const manifest: UserManifestFn = ({ browser }) => {
+const manifest: UserManifestFn = ({ browser, manifest: generated }) => {
   const base = {
     name: 'AI Job Copilot',
     description:
@@ -18,9 +18,18 @@ const manifest: UserManifestFn = ({ browser }) => {
     },
   };
 
+  const result = {
+    ...(generated ?? {}),
+    ...base,
+    options_ui: {
+      ...(generated?.options_ui ?? {}),
+      open_in_tab: true,
+    },
+  };
+
   if (browser === 'firefox') {
     return {
-      ...base,
+      ...result,
       browser_specific_settings: {
         gecko: {
           id: 'ai-job-copilot@extension.local',
@@ -30,7 +39,7 @@ const manifest: UserManifestFn = ({ browser }) => {
     };
   }
 
-  return base;
+  return result;
 };
 
 const SUPPRESS_WARNINGS = {

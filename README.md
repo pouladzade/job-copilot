@@ -241,11 +241,19 @@ The Options page has three tabs and an additional **LinkedIn Search Builder** pa
 
 ### Tab 2: 📄 Resume & Profile
 
+**Multiple Resumes** — You can maintain several resume variants (e.g., *Backend-Focused*, *Frontend-Focused*, *General*). Each resume has its own content, profile, and metadata. The dropdown at the top of the tab lets you switch between them.
+
+- **+ New Resume** — Create a blank resume entry
+- **Delete** — Remove the selected resume (hidden when only one exists)
+- **Set as Default** — Mark which resume is pre-selected in the popup
+
+**Resume Name** — A display label like "Backend Engineer" or "Staff Platform"
+
 **Resume (Markdown)** — A multiline textarea for your full resume in Markdown. Used by all generation prompts as the source of truth. **Do not invent experience** — the prompts strictly forbid fabrication.
 
-**Auto-fill Profile** — Click to have the LLM extract structured fields from your resume and populate the profile form. Uses `backend:parseResume` and requires an API key.
+**Auto-fill Profile** — Click to have the LLM extract structured fields from the current resume and populate its profile form. Uses `backend:parseResume` and requires an API key. The parsed profile is saved to the *current* resume only, not all resumes.
 
-**Profile Fields** — 21 structured fields the extension uses for form matching, message replies, and quick-match scoring:
+**Profile Fields** — 21 structured fields per resume, used for form matching, message replies, and quick-match scoring:
 
 | Field | Type | Used For |
 |-------|------|----------|
@@ -310,30 +318,116 @@ Click **🔍 Search on LinkedIn** to open the search.
 
 ## Using the Extension
 
-The popup has three top-level tabs: **✦ Copilot**, **◐ Presets**, **⚙ Settings**.
+The popup has three top-level tabs: **✦ Copilot**, **◐ Presets**, **⚙ Settings**. A **Resume** selector sits at the very top — visible on every tab when you have multiple resumes.
+
+![Popup with Resume selector](docs/screenshots/copilot-idle.png)
+
+---
 
 ### ✦ Copilot — the main workflow
 
-On any scrapable page (`http://` or `https://`), the Copilot tab shows four primary action buttons plus a Reply section:
+On any scrapable page (`http://` or `https://`), the Copilot tab shows the LinkedIn search bar, four primary action buttons, and a Reply section.
+
+#### Idle state — action buttons
 
 | Button | When to click |
 |--------|---------------|
-| **Summary** | You want to paste a tailored "Professional Summary" at the top of your resume |
-| **Cover Letter** | You're about to apply and want a tailored 250–350 word letter |
-| **Quick Match** | You're browsing jobs and want a fast fit score before deep-diving |
-| **Fill Form** | You're on an application form and want AI to fill in the fields |
+| **Summary** | Generate a 3–5 sentence professional summary tailored to the job |
+| **Cover Letter** | Generate a tailored 250–350 word cover letter |
+| **Quick Match** | Get a 0–10 fit score before spending tokens on a full generation |
+| **Fill Form** | Auto-fill visible form fields on the current page |
 
-The Reply section is always visible: type your intent, optionally toggle the context chips, and click **Reply**.
+#### Summary result
 
-Results persist across popup close/reopen. Each result has a **Copy** button and a **Clear** button.
+![Summary result](docs/screenshots/copilot-summary.png)
+
+Shows the generated professional summary with:
+- **Copy** — copies the text to clipboard
+- **Regenerate** — re-runs the prompt with the same job
+- **Token badge** — shows tokens used and estimated cost
+
+#### Cover Letter result
+
+![Cover Letter result](docs/screenshots/copilot-cover.png)
+
+Same pattern as Summary — Copy, Regenerate, Clear. The cover letter is grounded in your resume and addresses the specific company and role.
+
+#### Quick Match result
+
+![Quick Match result](docs/screenshots/copilot-quickmatch.png)
+
+| Score | Verdict |
+|-------|---------|
+| 9–10 | **Strong Match** |
+| 6–8 | **Moderate Match** |
+| 3–5 | **Weak Match** |
+| 0–2 | Not a fit |
+
+Each reason cites something from your resume AND the job description.
+
+#### Message Reply
+
+Type your intent (e.g. *"I'm interested but the salary is below my range"*) and click **Craft Reply**. Three context chips control what the AI sees:
+
+- 📄 **Resume** — include your resume in the reply context
+- 💬 **Page** — include the page text (the message being replied to)
+- 💼 **Job** — include the job description (auto-disabled if no scrapeable page is open)
+
+---
 
 ### ◐ Presets — saved LinkedIn searches
 
-List of saved LinkedIn search presets. Click a preset's **Search** button to open it in a new tab. Delete presets you no longer need.
+Build and save LinkedIn job search configs. Each preset stores filters like workplace type, experience level, job type, and Easy Apply.
 
-### ⚙ Settings — quick access to the Options page tabs
+![Presets tab](docs/screenshots/presets-tab.png)
 
-A condensed 3-tab version of the Options page (AI / Profile / Prompts). For the LinkedIn Search Builder, click the link to open the full Options page in a dedicated tab.
+- Toggle filters with chip buttons
+- **Save Changes** — stores the preset
+- **Delete** — removes the preset
+- **🔍 Search on LinkedIn** — opens the search URL in a new tab
+
+Saved presets also appear in the Copilot tab's LinkedIn search dropdown for quick access.
+
+---
+
+### ⚙ Settings — quick access to Options
+
+A condensed version of the Options page with manual Save. Changes are **not** auto-saved — click **Save** when done.
+
+#### AI tab
+
+![Settings AI tab](docs/screenshots/settings-ai.png)
+
+| Field | Description |
+|-------|-------------|
+| **API URL** | Your LLM provider's chat-completions endpoint |
+| **API Key** | Bearer token (masked in the UI) |
+| **Model** | Model identifier passed in the request body |
+
+#### Profile tab
+
+![Settings Profile tab](docs/screenshots/settings-profile.png)
+
+**Resume selector** — Switch between saved resumes. The ★ marks the default.
+
+**+ New** — Create a blank resume entry  
+**Delete** — Remove the selected resume (hidden when only one exists)  
+**Set as Default** — Marks which resume is pre-selected in the popup
+
+**Resume (Markdown)** — Your full resume text. Used by all AI prompts.  
+**Auto-fill Profile** — LLM extracts structured fields from your resume text.
+
+**Profile Fields** — 21 structured fields per resume. Edit by hand or auto-fill.
+
+#### Prompts tab
+
+![Settings Prompts tab](docs/screenshots/settings-prompts.png)
+
+Add short guidance per template (tone, emphasis, things to avoid). Base prompts are locked to keep JSON output stable.
+
+#### Unsaved changes guard
+
+If you try to switch Settings sub-tabs (AI → Profile → Prompts) with unsaved changes, a dialog asks **Stay** or **Discard**. Click **Open Options →** to open the full Options page in a dedicated browser tab.
 
 ---
 
