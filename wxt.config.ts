@@ -34,6 +34,9 @@ const manifest: UserManifestFn = ({ browser, manifest: generated }) => {
         gecko: {
           id: 'ai-job-copilot@extension.local',
           strict_min_version: '128.0',
+          data_collection_permissions: {
+            required: ['none'],
+          },
         },
       },
     };
@@ -42,22 +45,9 @@ const manifest: UserManifestFn = ({ browser, manifest: generated }) => {
   return result;
 };
 
-const SUPPRESS_WARNINGS = {
-  /**
-   * Firefox requires data_collection_permissions for new extensions
-   * submitted after November 3, 2025. Suppress the build-time warning
-   * since this extension is not yet being submitted to AMO. The actual
-   * manifest key must be added before Firefox Store submission.
-   *
-   * @see https://extensionworkshop.com/documentation/develop/firefox-builtin-data-consent/
-   */
-  firefoxDataCollection: true,
-} as const;
-
 export default defineConfig({
   srcDir: '.',
   manifest,
-  suppressWarnings: SUPPRESS_WARNINGS,
   vite: () => ({
     plugins: [preact()],
   }),
