@@ -5,9 +5,24 @@ export interface ScrapedField {
   readonly selector: string;
   readonly maxLength: number;
   readonly options: readonly string[];
+  readonly identity?: FieldIdentity;
 }
 
 export type FieldSelectorMap = Record<string, string>;
+
+export type FieldIdentityMap = Record<string, FieldIdentity>;
+
+export interface FieldIdentity {
+  readonly tag: string;
+  readonly inputType: string;
+  readonly name: string;
+  readonly id: string;
+  readonly formKey: string;
+  readonly positionInForm: number;
+  readonly label: string;
+  readonly options: readonly string[];
+  readonly nameMatchCount: number;
+}
 
 const MAX_FIELD_ID = 500;
 
@@ -74,12 +89,41 @@ function isUiChromeButton(element: Element): boolean {
   return false;
 }
 
-function isChromeLabel(label: string): boolean {
+function _isChromeLabel(label: string): boolean {
   const normalized = label.toLowerCase().trim();
   if (normalized === '') return false;
 
-  for (const chrome of LABEL_CHROME_BLACKLIST) {
-    if (normalized === chrome || normalized.startsWith(chrome + ' ')) return true;
+  // Only filter labels that are clearly UI chrome for *buttons*. We compare
+  // against the full normalized label (exact or word-bounded) to avoid
+  // swallowing legitimate form fields like "Open field" or "Apply online".
+  const chromeLabels = new Set([
+    'toggle flyout',
+    'clear search',
+    'clear selections',
+    'remove file',
+    'change country',
+    'close',
+    'expand',
+    'collapse',
+    'show',
+    'hide',
+    'menu',
+    'more',
+    'less',
+    'edit',
+    'cancel',
+    'done',
+    'previous',
+    'next',
+    'back',
+    'forward',
+  ]);
+
+  if (chromeLabels.has(normalized)) return true;
+
+  const tokens = normalized.split(/\s+/);
+  for (const token of tokens) {
+    if (chromeLabels.has(token)) return true;
   }
 
   return false;
@@ -90,6 +134,7 @@ type FieldType = ScrapedField['type'];
 interface ScrapeResult {
   readonly fields: ScrapedField[];
   readonly selectorMap: FieldSelectorMap;
+  readonly identityMap: FieldIdentityMap;
   readonly debug: string;
 }
 
@@ -99,6 +144,29 @@ function isVisible(element: Element): boolean {
   if (element.hasAttribute('hidden')) return false;
   const style = (element as HTMLElement).style;
   if (style && (style.display === 'none' || style.visibility === 'hidden')) return false;
+  if (style && (style.opacity === '0' || parseFloat(style.opacity) === 0)) return false;
+
+  // Disabled / inert controls are not eligible for filling.
+  try {
+    if (element.matches(':disabled')) return false;
+    if (element.closest('[inert]') !== null) return false;
+    if (element.closest('[aria-hidden="true"]') !== null) return false;
+    const fieldset = element.closest('fieldset');
+    if (fieldset !== null && fieldset.hasAttribute('disabled')) return false;
+  } catch {
+    // matches() may throw in jsdom for non-standard pseudo-classes; ignore.
+  }
+
+  // Ancestor hidden / display:none (computed).
+  let parent: Element | null = element.parentElement;
+  while (parent !== null) {
+    const pStyle = (parent as HTMLElement).style;
+    if (pStyle && (pStyle.display === 'none' || pStyle.visibility === 'hidden')) return false;
+    if (parent.hasAttribute('hidden')) return false;
+    if (parent.getAttribute('aria-hidden') === 'true') return false;
+    parent = parent.parentElement;
+  }
+
   return true;
 }
 
@@ -109,6 +177,13 @@ function findFormContainers(): readonly Element[] {
   if (roleForms.length > 0) return Array.from(roleForms);
   // Fallback: formless pages (AshbyHQ, custom React forms, etc.) — scan body directly.
   return document.body ? [document.body] : [];
+}
+
+function formKey(form: Element, formIndex: number): string {
+  if (form === document.body) return 'body';
+  const id = form.getAttribute('id');
+  if (id !== null && id !== '') return `form#${CSS.escape(id)}`;
+  return `form:nth(${formIndex})`;
 }
 
 function resolveFieldsetLegend(input: Element): string {
@@ -325,21 +400,48 @@ function extractOptions(element: Element): readonly string[] {
   return [];
 }
 
-function buildSelector(element: Element): string {
-  const id = element.id;
-  if (id !== '') {
-    return `#${CSS.escape(id)}`;
-  }
+// Count how many controls in the document share the same name (or, for
+// radios, the same name and type). The filler compares this to the live count
+// at inject time to detect that the page state has changed (F-01).
+function countNameMatches(element: Element, type: FieldType): number {
+  const name = element.getAttribute('name');
+  if (name === null || name === '') return 1;
 
-  const name = (element as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).getAttribute('name');
-  if (name !== null && name !== '') {
-    return `[name="${CSS.escape(name)}"]`;
+  if (type === 'radio') {
+    return document.querySelectorAll(`input[type="radio"][name="${CSS.escape(name)}"]`).length;
   }
 
   const tag = element.tagName.toLowerCase();
-  const classes = element.className && typeof element.className === 'string'
-    ? `.${element.className.toString().trim().split(/\s+/).join('.')}`
-    : '';
+  return document.querySelectorAll(`${tag}[name="${CSS.escape(name)}"]`).length;
+}
+
+// Build a selector that identifies the field. We prefer name-based selectors
+// because they let the filler detect when the page added or removed a same-named
+// control between scrape and fill (F-01). Identity disambiguation in fillField
+// resolves duplicate-name controls to the right element (F-05).
+function buildSelector(element: Element, _formRoot: Element, _positionInForm: number): string {
+  const tag = element.tagName.toLowerCase();
+  const name = element.getAttribute('name');
+  const inputType = element.getAttribute('type');
+
+  if (name !== null && name !== '') {
+    if (inputType === 'radio') {
+      return `input[type="radio"][name="${CSS.escape(name)}"]`;
+    }
+    return `${tag}[name="${CSS.escape(name)}"]`;
+  }
+
+  const id = element.getAttribute('id');
+  if (id !== null && id !== '') {
+    if (document.querySelectorAll(`#${CSS.escape(id)}`).length === 1) {
+      return `#${CSS.escape(id)}`;
+    }
+  }
+
+  const classes =
+    element.className && typeof element.className === 'string'
+      ? `.${element.className.toString().trim().split(/\s+/).join('.')}`
+      : '';
 
   return `${tag}${classes}`;
 }
@@ -354,32 +456,35 @@ export function scrapeFormFieldsWithMap(): ScrapeResult {
   const debug = `forms=${forms.length}${isBodyFallback ? ' (body-fallback)' : ` (${forms[0]?.tagName.toLowerCase() ?? '?'})`}`;
 
   if (forms.length === 0 || (isBodyFallback && !document.body.querySelector('input, textarea, select'))) {
-    return { fields: [], selectorMap: {}, debug: `${debug} — no controls found` };
+    return { fields: [], selectorMap: {}, identityMap: {}, debug: `${debug} — no controls found` };
   }
 
   const seenRadios = new Set<string>();
   const seenControls = new WeakSet<Element>();
   const fields: ScrapedField[] = [];
   const selectorMap: FieldSelectorMap = {};
+  const identityMap: FieldIdentityMap = {};
   let fieldCounter = 0;
 
-  for (const form of forms) {
-    const controls = form.querySelectorAll('input, textarea, select, button');
+  forms.forEach((form, formIndex) => {
+    const fk = formKey(form, formIndex);
+    // Collect only eligible (visible, non-submit) controls to compute positionInForm.
+    const controls = Array.from(form.querySelectorAll('input, textarea, select, button'))
+      .filter((c) => !isSubmitElement(c))
+      .filter((c) => c.tagName.toLowerCase() !== 'button' || !isUiChromeButton(c))
+      .filter((c) => !(c.tagName.toLowerCase() === 'input' && (c as HTMLInputElement).type === 'file'))
+      .filter(isVisible);
 
+    let positionCursor = 0;
     for (const control of controls) {
       if (seenControls.has(control)) continue;
       seenControls.add(control);
 
-      if (isSubmitElement(control)) continue;
-      if (!isVisible(control)) continue;
-      if (isUiChromeButton(control)) continue;
-
-      // Skip file uploads — these need real files, not text matching.
-      if (control.tagName.toLowerCase() === 'input' && (control as HTMLInputElement).type === 'file') continue;
+      if (fieldCounter >= MAX_FIELD_ID) break;
 
       const type = classifyFieldType(control);
 
-      // Deduplicate radio groups: only capture the first radio in a named group
+      // Deduplicate radio groups: only capture the first radio in a named group.
       if (type === 'radio') {
         const radioName = (control as HTMLInputElement).getAttribute('name') ?? '';
         if (radioName !== '' && seenRadios.has(radioName)) {
@@ -390,19 +495,23 @@ export function scrapeFormFieldsWithMap(): ScrapeResult {
         }
       }
 
-      if (fieldCounter >= MAX_FIELD_ID) {
-        break;
-      }
-
       const label = resolveLabel(control);
-
-      // Skip fields with chrome-only labels (e.g. "Toggle flyout", "Search")
-      if (isChromeLabel(label)) continue;
 
       const fieldId = `field_${fieldCounter}`;
       const maxLength = parseInt((control as HTMLInputElement).getAttribute('maxlength') ?? '0', 10) || 5000;
       const options = extractOptions(control);
-      const selector = buildSelector(control);
+      const selector = buildSelector(control, form, positionCursor);
+      const identity: FieldIdentity = {
+        tag: control.tagName.toLowerCase(),
+        inputType: (control as HTMLInputElement).type ?? '',
+        name: control.getAttribute('name') ?? '',
+        id: control.getAttribute('id') ?? '',
+        formKey: fk,
+        positionInForm: positionCursor,
+        label,
+        options,
+        nameMatchCount: countNameMatches(control, type),
+      };
 
       fields.push({
         id: fieldId,
@@ -411,16 +520,15 @@ export function scrapeFormFieldsWithMap(): ScrapeResult {
         selector,
         maxLength,
         options,
+        identity,
       });
 
       selectorMap[fieldId] = selector;
+      identityMap[fieldId] = identity;
       fieldCounter++;
+      positionCursor++;
     }
+  });
 
-    if (fieldCounter >= MAX_FIELD_ID) {
-      break;
-    }
-  }
-
-  return { fields, selectorMap, debug: `${debug} — ${fields.length} fields` };
+  return { fields, selectorMap, identityMap, debug: `${debug} — ${fields.length} fields` };
 }

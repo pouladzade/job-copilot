@@ -3,11 +3,7 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -33,18 +29,8 @@
     "rootDir": "./src",
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
-    "types": [
-      "chrome",
-      "jest"
-    ]
+    "types": ["chrome", "jest"]
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    ".output",
-    "src/__tests__/**/*"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", ".output", "src/__tests__/**/*"]
 }

@@ -90,8 +90,13 @@ describe('deterministicMatch', () => {
   it('matches location, work auth, and experience variants', () => {
     expect(deterministicMatch('City', FULL_PROFILE)?.value).toBe('Berlin');
     expect(deterministicMatch('State / Region', FULL_PROFILE)?.value).toBe('Berlin');
+    // Work authorization matches when the label asks for the candidate's
+    // status (not a yes/no sponsorship question).
     expect(deterministicMatch('Are you authorized to work?', FULL_PROFILE)?.value).toBe('EU Blue Card');
-    expect(deterministicMatch('Visa Sponsorship Required?', FULL_PROFILE)?.value).toBe('EU Blue Card');
+    expect(deterministicMatch('Work Authorization Status', FULL_PROFILE)?.value).toBe('EU Blue Card');
+    // F-07: a yes/no sponsorship question must NOT receive a free-text status.
+    expect(deterministicMatch('Visa Sponsorship Required?', FULL_PROFILE)).toBeNull();
+    expect(deterministicMatch('Will you require sponsorship?', FULL_PROFILE)).toBeNull();
     expect(deterministicMatch('Years of Experience', FULL_PROFILE)?.value).toBe('7');
     expect(deterministicMatch('Years experience with React', FULL_PROFILE)?.value).toBe('7');
     expect(deterministicMatch('Notice Period', FULL_PROFILE)?.value).toBe('2 weeks');

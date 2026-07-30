@@ -90,14 +90,14 @@ const MOCK_MATCHES: ReadonlyArray<{ readonly fieldId: string; readonly value: st
   { fieldId: 'field_0', value: 'Ahmad Pouladzade' },
   { fieldId: 'field_1', value: 'user@example.com' },
   { fieldId: 'field_2', value: '+1-555-0123' },
-  { fieldId: 'field_3', value: 'us_citizen' },       // radio group — value matches
-  { fieldId: 'field_4', value: '7' },                 // years of experience
+  { fieldId: 'field_3', value: 'us_citizen' }, // radio group — value matches
+  { fieldId: 'field_4', value: '7' }, // years of experience
   { fieldId: 'field_5', value: 'https://linkedin.com/in/user' },
   { fieldId: 'field_6', value: 'https://github.com/user' },
-  { fieldId: 'field_7', value: 'Yes' },               // select
-  { fieldId: 'field_8', value: '$150,000' },          // salary
+  { fieldId: 'field_7', value: 'Yes' }, // select
+  { fieldId: 'field_8', value: '$150,000' }, // salary
   { fieldId: 'field_9', value: 'I am a software engineer with 7 years of experience.' },
-  { fieldId: 'field_10', value: 'true' },              // checkbox — truthy
+  { fieldId: 'field_10', value: 'true' }, // checkbox — truthy
 ];
 
 describe('form-fill integration (browser simulation)', () => {
@@ -109,7 +109,9 @@ describe('form-fill integration (browser simulation)', () => {
 
     console.log('=== STEP 1: Scraped field list ===');
     for (const f of result.fields) {
-      console.log(`  ${f.id}: type=${f.type}, label="${f.label}", maxLength=${f.maxLength}, options=[${f.options.join(', ')}]`);
+      console.log(
+        `  ${f.id}: type=${f.type}, label="${f.label}", maxLength=${f.maxLength}, options=[${f.options.join(', ')}]`,
+      );
     }
     console.log(`  Total: ${result.fields.length} fields`);
 
@@ -244,9 +246,7 @@ describe('form-fill integration (browser simulation)', () => {
     expect(labels).not.toContain('Cancel');
 
     // Check: no element with id="submit-btn" should appear
-    const submitButtonInFields = result.fields.some(
-      (f) => f.id === 'submit-btn' || f.label === 'Submit Application',
-    );
+    const submitButtonInFields = result.fields.some((f) => f.id === 'submit-btn' || f.label === 'Submit Application');
     expect(submitButtonInFields).toBe(false);
 
     console.log('  No submit/reset/cancel elements in scraped field list ✓');

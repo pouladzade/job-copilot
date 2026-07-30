@@ -13,6 +13,7 @@ export default tseslint.config(
       '*.cjs',
       '*.config.*',
       'entrypoints/**',
+      'scripts/**',
       'src/__tests__/**',
     ],
   },
@@ -38,11 +39,14 @@ export default tseslint.config(
       'no-debugger': 'error',
 
       // Unused vars — allow prefixed with _
-      '@typescript-eslint/no-unused-vars': ['error', {
-        argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_',
-        caughtErrorsIgnorePattern: '^_',
-      }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
 
       // Chrome extension APIs use callback pattern (not await/Promises)
       '@typescript-eslint/no-floating-promises': 'off',

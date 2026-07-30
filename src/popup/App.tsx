@@ -86,12 +86,12 @@ function ResumeBar(): JSX.Element {
         borderBottom: `1px solid ${colors.accentBorder}`,
       }}
     >
-      <span style={{ fontSize: '10px', fontWeight: 600, color: colors.accent, whiteSpace: 'nowrap' }}>
-        Resume
-      </span>
+      <span style={{ fontSize: '10px', fontWeight: 600, color: colors.accent, whiteSpace: 'nowrap' }}>Resume</span>
       <select
         value={activeId}
-        onChange={(e) => { handleChange((e.target as HTMLSelectElement).value); }}
+        onChange={(e) => {
+          handleChange((e.target as HTMLSelectElement).value);
+        }}
         style={{
           flex: 1,
           padding: '4px 6px',
@@ -127,11 +127,7 @@ function ShellHeader(): JSX.Element {
         borderBottom: `1px solid ${colors.border}`,
       }}
     >
-      <img
-        src="assets/logo.png"
-        alt="AI Job Copilot"
-        style={{ width: '20px', height: '20px', flexShrink: 0 }}
-      />
+      <img src="assets/logo.png" alt="AI Job Copilot" style={{ width: '20px', height: '20px', flexShrink: 0 }} />
       <span
         style={{
           fontWeight: 600,
@@ -146,10 +142,7 @@ function ShellHeader(): JSX.Element {
   );
 }
 
-function TabBar(p: {
-  readonly active: ViewKey;
-  readonly onChange: (key: ViewKey) => void;
-}): JSX.Element {
+function TabBar(p: { readonly active: ViewKey; readonly onChange: (key: ViewKey) => void }): JSX.Element {
   return (
     <div
       role="tablist"
@@ -166,7 +159,9 @@ function TabBar(p: {
             key={t.key}
             role="tab"
             aria-selected={isActive}
-            onClick={() => { p.onChange(t.key); }}
+            onClick={() => {
+              p.onChange(t.key);
+            }}
             style={{
               flex: 1,
               padding: '9px 0',
@@ -197,10 +192,10 @@ export function App(): JSX.Element {
   const [view, setView] = useState<ViewKey>('copilot');
 
   return (
-        <Container>
-          <ResumeBar />
-          <ShellHeader />
-          <TabBar active={view} onChange={setView} />
+    <Container>
+      <ResumeBar />
+      <ShellHeader />
+      <TabBar active={view} onChange={setView} />
       <div
         style={{
           flex: 1,

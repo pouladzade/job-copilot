@@ -97,9 +97,17 @@ export const LLM_DEFAULTS: LlmConfig = {
   prmReplyAdd: '',
 };
 
-export const PROMPT_SLOTS: readonly { readonly key: keyof LlmConfig; readonly label: string; readonly description: string }[] = [
+export const PROMPT_SLOTS: readonly {
+  readonly key: keyof LlmConfig;
+  readonly label: string;
+  readonly description: string;
+}[] = [
   { key: 'prmExtractAdd', label: 'Job Extract', description: 'Pulls structured data from a posting.' },
-  { key: 'prmSummaryAdd', label: 'Resume Summary', description: 'Writes the Professional Summary section of your resume.' },
+  {
+    key: 'prmSummaryAdd',
+    label: 'Resume Summary',
+    description: 'Writes the Professional Summary section of your resume.',
+  },
   { key: 'prmCoverAdd', label: 'Cover Letter', description: 'Drafts a cover letter from a posting.' },
   { key: 'prmQuickAdd', label: 'Quick Match', description: 'Scores a job against your resume.' },
   { key: 'prmFormAdd', label: 'Form Fill', description: 'Matches form fields to your profile.' },

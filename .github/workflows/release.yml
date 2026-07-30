@@ -3,7 +3,11 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      # F-13: Only accept semver-shaped tags. The old flow accepted every
+      # tag starting with "v" and wrote its suffix into package.json
+      # verbatim, which let a malformed or accidental tag produce a broken
+      # release.
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
 
 jobs:
   release:
@@ -30,36 +34,60 @@ jobs:
           TAG="${GITHUB_REF#refs/tags/v}"
           echo "VERSION=${TAG}" >> "${GITHUB_ENV}"
 
+          # F-13: Validate semver before rewriting package.json.
+          if ! echo "${TAG}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.-].*)?$'; then
+            echo "::error::Tag '${TAG}' is not a valid semver (X.Y.Z[-prerelease][+build])"
+            exit 1
+          fi
+
           tmp=$(mktemp)
           jq --arg v "${TAG}" '.version = $v' package.json > "$tmp" && mv "$tmp" package.json
 
       - name: TypeCheck
         run: pnpm run typecheck
 
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Format check
+        run: pnpm run format:check
+
       - name: Test
         run: pnpm run test:ci
 
-      - name: Build (Chrome)
+      # F-10: One intentional build sequence for all three browser targets.
+      - name: Build (Chrome + Firefox + Safari)
         run: pnpm run build
-
-      - name: Build (Firefox)
-        run: pnpm run build:firefox
-
-      - name: Build (Safari)
-        run: pnpm run build:safari
 
       - name: Package extensions
         run: |
           pnpm wxt zip
           pnpm wxt zip -b firefox --mv3
           pnpm wxt zip -b safari --mv3
-          echo "--- Output files ---"
-          ls -la .output/*.zip || true
+
+      # F-13: Assert the expected three archives exist and are non-empty
+      # before publishing. A missing or zero-byte archive used to slip past
+      # the diagnostic `ls ... || true` and produce a release with the
+      # wrong assets.
+      - name: Verify packaged archives
+        run: |
+          set -euo pipefail
+          expected_chrome=".output/job-hunter-extension-${VERSION}-chrome.zip"
+          expected_firefox=".output/job-hunter-extension-${VERSION}-firefox.zip"
+          expected_safari=".output/job-hunter-extension-${VERSION}-safari.zip"
+          for f in "$expected_chrome" "$expected_firefox" "$expected_safari"; do
+            if [ ! -s "$f" ]; then
+              echo "::error::Missing or empty archive: $f"
+              exit 1
+            fi
+          done
+          echo "--- Archives present and non-empty ---"
+          ls -la "$expected_chrome" "$expected_firefox" "$expected_safari"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "v${VERSION}"
+          name: 'v${VERSION}'
           files: |
             .output/job-hunter-extension-*-chrome.zip
             .output/job-hunter-extension-*-firefox.zip

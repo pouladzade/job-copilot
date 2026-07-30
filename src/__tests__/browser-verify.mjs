@@ -155,10 +155,10 @@ async function main() {
             label = ctrl.getAttribute('aria-label') ?? '';
           }
           if (label === '') {
-            label = (ctrl).getAttribute('placeholder') ?? '';
+            label = ctrl.getAttribute('placeholder') ?? '';
           }
           if (label === '') {
-            label = ((ctrl).getAttribute('name') ?? '').replace(/[_-]/g, ' ');
+            label = (ctrl.getAttribute('name') ?? '').replace(/[_-]/g, ' ');
           }
 
           let type = 'text';
@@ -174,15 +174,15 @@ async function main() {
           let options = [];
           if (tag === 'select') {
             options = Array.from(ctrl.options)
-              .filter(o => o.value !== '')
-              .map(o => o.text.trim());
+              .filter((o) => o.value !== '')
+              .map((o) => o.text.trim());
           }
           if (type === 'radio') {
             const name = ctrl.getAttribute('name');
             if (name !== null && name !== '') {
-              options = Array.from(
-                document.querySelectorAll(`input[type="radio"][name="${CSS.escape(name)}"]`)
-              ).map(r => r.getAttribute('value') ?? '').filter(v => v !== '');
+              options = Array.from(document.querySelectorAll(`input[type="radio"][name="${CSS.escape(name)}"]`))
+                .map((r) => r.getAttribute('value') ?? '')
+                .filter((v) => v !== '');
             }
           }
 
@@ -194,9 +194,12 @@ async function main() {
             type,
             maxLength,
             options,
-            selector: id !== '' ? `#${CSS.escape(id)}` :
-              (ctrl).getAttribute('name') !== null ? `[name="${CSS.escape((ctrl).getAttribute('name'))}"]` :
-              tag,
+            selector:
+              id !== ''
+                ? `#${CSS.escape(id)}`
+                : ctrl.getAttribute('name') !== null
+                  ? `[name="${CSS.escape(ctrl.getAttribute('name'))}"]`
+                  : tag,
           });
         }
       }
@@ -205,17 +208,31 @@ async function main() {
     });
 
     log('   ', `Scraped ${scrapeResult.length} fields from real DOM:`);
-    console.log('   ', JSON.stringify(scrapeResult.map(f => ({
-      id: f.id, label: f.label, type: f.type,
-      maxLength: f.maxLength, options: f.options
-    })), null, 2).split('\n').map(l => '   ' + l).join('\n'));
+    console.log(
+      '   ',
+      JSON.stringify(
+        scrapeResult.map((f) => ({
+          id: f.id,
+          label: f.label,
+          type: f.type,
+          maxLength: f.maxLength,
+          options: f.options,
+        })),
+        null,
+        2,
+      )
+        .split('\n')
+        .map((l) => '   ' + l)
+        .join('\n'),
+    );
 
     if (scrapeResult.length === 0) {
       fail('No form fields found on this page. Trying W3Schools fallback...');
 
       // Try the W3Schools interactive form page
       await page.goto('https://www.w3schools.com/html/tryit.asp?filename=tryhtml_form_submit', {
-        waitUntil: 'networkidle2', timeout: 30000
+        waitUntil: 'networkidle2',
+        timeout: 30000,
       });
 
       // W3Schools uses iframes — we need the iframe content
@@ -229,15 +246,35 @@ async function main() {
             const controls = form.querySelectorAll('input, textarea, select, button');
             for (const ctrl of controls) {
               const tag = ctrl.tagName.toLowerCase();
-              if (tag === 'button' && ((ctrl.getAttribute('type') ?? 'submit').toLowerCase()) === 'submit') continue;
-              if (tag === 'input' && ['submit', 'button', 'image', 'reset'].includes((ctrl.getAttribute('type') ?? 'text').toLowerCase())) continue;
-              let label = ctrl.getAttribute('aria-label') ?? ctrl.getAttribute('placeholder') ?? ((ctrl).getAttribute('name') ?? '').replace(/[_-]/g, ' ');
-              let type = tag === 'textarea' ? 'textarea' : tag === 'select' ? 'select' : tag === 'input' ?
-                ((ctrl.getAttribute('type') === 'radio' ? 'radio' : (ctrl.getAttribute('type') === 'checkbox' ? 'checkbox' : 'text'))) : 'text';
+              if (tag === 'button' && (ctrl.getAttribute('type') ?? 'submit').toLowerCase() === 'submit') continue;
+              if (
+                tag === 'input' &&
+                ['submit', 'button', 'image', 'reset'].includes((ctrl.getAttribute('type') ?? 'text').toLowerCase())
+              )
+                continue;
+              let label =
+                ctrl.getAttribute('aria-label') ??
+                ctrl.getAttribute('placeholder') ??
+                (ctrl.getAttribute('name') ?? '').replace(/[_-]/g, ' ');
+              let type =
+                tag === 'textarea'
+                  ? 'textarea'
+                  : tag === 'select'
+                    ? 'select'
+                    : tag === 'input'
+                      ? ctrl.getAttribute('type') === 'radio'
+                        ? 'radio'
+                        : ctrl.getAttribute('type') === 'checkbox'
+                          ? 'checkbox'
+                          : 'text'
+                      : 'text';
               results.push({
-                id: `field_${results.length}`, label, type,
+                id: `field_${results.length}`,
+                label,
+                type,
                 maxLength: parseInt(ctrl.getAttribute('maxlength') ?? '0', 10) || 5000,
-                options: [], selector: ctrl.tagName.toLowerCase()
+                options: [],
+                selector: ctrl.tagName.toLowerCase(),
               });
             }
           }
@@ -253,13 +290,22 @@ async function main() {
     log('\n📤', 'STEP 4: Sending field list to backend...');
 
     // Only send first 10 fields to keep prompt small
-    const fieldsForBackend = scrapeResult.slice(0, 10).map(f => ({
-      id: f.id, label: f.label, type: f.type,
-      maxLength: f.maxLength, options: f.options
+    const fieldsForBackend = scrapeResult.slice(0, 10).map((f) => ({
+      id: f.id,
+      label: f.label,
+      type: f.type,
+      maxLength: f.maxLength,
+      options: f.options,
     }));
 
     const requestBody = { applicationId: APPLICATION_ID, fields: fieldsForBackend };
-    console.log('   Request:', JSON.stringify(requestBody, null, 2).split('\n').map(l => '   ' + l).join('\n'));
+    console.log(
+      '   Request:',
+      JSON.stringify(requestBody, null, 2)
+        .split('\n')
+        .map((l) => '   ' + l)
+        .join('\n'),
+    );
 
     const backendResp = await fetch(`${BACKEND_URL}/applications/match-form-fields`, {
       method: 'POST',
@@ -269,11 +315,18 @@ async function main() {
     const backendData = await backendResp.json();
 
     console.log('   Response:');
-    console.log(JSON.stringify(backendData, null, 2).split('\n').map(l => '   ' + l).join('\n'));
+    console.log(
+      JSON.stringify(backendData, null, 2)
+        .split('\n')
+        .map((l) => '   ' + l)
+        .join('\n'),
+    );
 
     if (backendResp.ok) {
       pass(`Backend matched ${backendData.values.length} fields, ${backendData.unmatched.length} unmatched`);
-      pass(`Token usage: ${backendData.tokenUsage.totalTokens} tokens, $${backendData.tokenUsage.estimatedCostUsd.toFixed(6)}`);
+      pass(
+        `Token usage: ${backendData.tokenUsage.totalTokens} tokens, $${backendData.tokenUsage.estimatedCostUsd.toFixed(6)}`,
+      );
     } else {
       fail(`Backend error: ${backendResp.status}`);
     }
@@ -281,92 +334,108 @@ async function main() {
     // ── STEP 5: Fill fields via browser ──
     log('\n✍️', 'STEP 5: Filling real DOM fields...');
 
-    const fillResult = await page.evaluate((matches) => {
-      const results = [];
-      for (const match of matches) {
-        // Find the field by label match (since IDs are regenerated)
-        // We'll use the scraper's selector
-        const forms = document.querySelectorAll('form');
-        for (const form of forms) {
-          const controls = form.querySelectorAll('input, textarea, select');
-          for (const ctrl of controls) {
-            const tag = ctrl.tagName.toLowerCase();
-            let label = '';
-            const id = ctrl.id;
-            if (id !== '' && typeof CSS !== 'undefined') {
-              const labelEl = document.querySelector(`label[for="${CSS.escape(id)}"]`);
-              if (labelEl !== null) label = labelEl.textContent?.trim() ?? '';
-            }
-            if (label === '') {
-              const parentLabel = ctrl.closest('label');
-              if (parentLabel !== null) {
-                let directText = '';
-                for (const child of parentLabel.childNodes) {
-                  if (child.nodeType === Node.TEXT_NODE) directText += child.textContent ?? '';
-                }
-                label = directText.trim();
+    const fillResult = await page.evaluate(
+      (matches) => {
+        const results = [];
+        for (const match of matches) {
+          // Find the field by label match (since IDs are regenerated)
+          // We'll use the scraper's selector
+          const forms = document.querySelectorAll('form');
+          for (const form of forms) {
+            const controls = form.querySelectorAll('input, textarea, select');
+            for (const ctrl of controls) {
+              const tag = ctrl.tagName.toLowerCase();
+              let label = '';
+              const id = ctrl.id;
+              if (id !== '' && typeof CSS !== 'undefined') {
+                const labelEl = document.querySelector(`label[for="${CSS.escape(id)}"]`);
+                if (labelEl !== null) label = labelEl.textContent?.trim() ?? '';
               }
-            }
-            if (label === '') label = ctrl.getAttribute('aria-label') ?? '';
-            if (label === '') label = ctrl.getAttribute('placeholder') ?? '';
-
-            // Try fuzzy match by label keyword
-            const matchLabel = match.fieldLabel.toLowerCase();
-            const ctrlLabel = label.toLowerCase();
-
-            if (ctrlLabel.includes(matchLabel) || matchLabel.includes(ctrlLabel) ||
-                match.label.includes(ctrlLabel) || ctrlLabel.includes(match.label)) {
-
-              const before = tag === 'textarea' ? ctrl.value :
-                tag === 'select' ? (ctrl.options[ctrl.selectedIndex]?.text ?? '') :
-                tag === 'input' && ctrl.type === 'radio' ? String(ctrl.checked) :
-                tag === 'input' && ctrl.type === 'checkbox' ? String(ctrl.checked) :
-                ctrl.value;
-
-              try {
-                if (tag === 'textarea') {
-                  ctrl.value = match.value;
-                  ctrl.dispatchEvent(new Event('input', { bubbles: true }));
-                  ctrl.dispatchEvent(new Event('change', { bubbles: true }));
-                } else if (tag === 'select') {
-                  for (let i = 0; i < ctrl.options.length; i++) {
-                    if (ctrl.options[i].text.trim() === match.value) {
-                      ctrl.selectedIndex = i;
-                      ctrl.dispatchEvent(new Event('change', { bubbles: true }));
-                      break;
-                    }
+              if (label === '') {
+                const parentLabel = ctrl.closest('label');
+                if (parentLabel !== null) {
+                  let directText = '';
+                  for (const child of parentLabel.childNodes) {
+                    if (child.nodeType === Node.TEXT_NODE) directText += child.textContent ?? '';
                   }
-                } else if (tag === 'input' && ctrl.type === 'radio') {
-                  ctrl.checked = (ctrl.value === match.value);
-                  ctrl.dispatchEvent(new Event('change', { bubbles: true }));
-                } else if (tag === 'input' && ctrl.type === 'checkbox') {
-                  const truthy = ['yes', 'true', '1', 'on', 'checked'];
-                  ctrl.checked = truthy.includes(match.value.toLowerCase().trim());
-                  ctrl.dispatchEvent(new Event('change', { bubbles: true }));
-                } else {
-                  ctrl.value = match.value;
-                  ctrl.dispatchEvent(new Event('input', { bubbles: true }));
-                  ctrl.dispatchEvent(new Event('change', { bubbles: true }));
+                  label = directText.trim();
                 }
-              } catch (e) {
-                results.push({ field: label, success: false, error: e.message, before, after: '' });
-                continue;
               }
+              if (label === '') label = ctrl.getAttribute('aria-label') ?? '';
+              if (label === '') label = ctrl.getAttribute('placeholder') ?? '';
 
-              const after = tag === 'textarea' ? ctrl.value :
-                tag === 'select' ? (ctrl.options[ctrl.selectedIndex]?.text ?? '') :
-                tag === 'input' && ctrl.type === 'radio' ? String(ctrl.checked) :
-                tag === 'input' && ctrl.type === 'checkbox' ? String(ctrl.checked) :
-                ctrl.value;
+              // Try fuzzy match by label keyword
+              const matchLabel = match.fieldLabel.toLowerCase();
+              const ctrlLabel = label.toLowerCase();
 
-              results.push({ field: label, success: true, value: match.value, before, after });
-              break;
+              if (
+                ctrlLabel.includes(matchLabel) ||
+                matchLabel.includes(ctrlLabel) ||
+                match.label.includes(ctrlLabel) ||
+                ctrlLabel.includes(match.label)
+              ) {
+                const before =
+                  tag === 'textarea'
+                    ? ctrl.value
+                    : tag === 'select'
+                      ? (ctrl.options[ctrl.selectedIndex]?.text ?? '')
+                      : tag === 'input' && ctrl.type === 'radio'
+                        ? String(ctrl.checked)
+                        : tag === 'input' && ctrl.type === 'checkbox'
+                          ? String(ctrl.checked)
+                          : ctrl.value;
+
+                try {
+                  if (tag === 'textarea') {
+                    ctrl.value = match.value;
+                    ctrl.dispatchEvent(new Event('input', { bubbles: true }));
+                    ctrl.dispatchEvent(new Event('change', { bubbles: true }));
+                  } else if (tag === 'select') {
+                    for (let i = 0; i < ctrl.options.length; i++) {
+                      if (ctrl.options[i].text.trim() === match.value) {
+                        ctrl.selectedIndex = i;
+                        ctrl.dispatchEvent(new Event('change', { bubbles: true }));
+                        break;
+                      }
+                    }
+                  } else if (tag === 'input' && ctrl.type === 'radio') {
+                    ctrl.checked = ctrl.value === match.value;
+                    ctrl.dispatchEvent(new Event('change', { bubbles: true }));
+                  } else if (tag === 'input' && ctrl.type === 'checkbox') {
+                    const truthy = ['yes', 'true', '1', 'on', 'checked'];
+                    ctrl.checked = truthy.includes(match.value.toLowerCase().trim());
+                    ctrl.dispatchEvent(new Event('change', { bubbles: true }));
+                  } else {
+                    ctrl.value = match.value;
+                    ctrl.dispatchEvent(new Event('input', { bubbles: true }));
+                    ctrl.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                } catch (e) {
+                  results.push({ field: label, success: false, error: e.message, before, after: '' });
+                  continue;
+                }
+
+                const after =
+                  tag === 'textarea'
+                    ? ctrl.value
+                    : tag === 'select'
+                      ? (ctrl.options[ctrl.selectedIndex]?.text ?? '')
+                      : tag === 'input' && ctrl.type === 'radio'
+                        ? String(ctrl.checked)
+                        : tag === 'input' && ctrl.type === 'checkbox'
+                          ? String(ctrl.checked)
+                          : ctrl.value;
+
+                results.push({ field: label, success: true, value: match.value, before, after });
+                break;
+              }
             }
           }
         }
-      }
-      return results;
-    }, backendData.values.map(v => ({ ...v, label: '' })));
+        return results;
+      },
+      backendData.values.map((v) => ({ ...v, label: '' })),
+    );
 
     for (const r of fillResult) {
       if (r.success) {
@@ -374,15 +443,20 @@ async function main() {
       }
     }
 
-    if (fillResult.filter(r => r.success).length > 0) {
-      pass(`${fillResult.filter(r => r.success).length} fields populated in real DOM`);
+    if (fillResult.filter((r) => r.success).length > 0) {
+      pass(`${fillResult.filter((r) => r.success).length} fields populated in real DOM`);
     } else {
       // Fall back to a simpler test — just check the page has form inputs
       const formExists = await page.evaluate(() => document.querySelectorAll('form').length > 0);
-      const inputCount = await page.evaluate(() => document.querySelectorAll('form input, form textarea, form select').length);
+      const inputCount = await page.evaluate(
+        () => document.querySelectorAll('form input, form textarea, form select').length,
+      );
 
       if (formExists && inputCount > 0) {
-        log('   ', `Page has ${inputCount} form controls — field matching requires label resolution on this specific page's markup`);
+        log(
+          '   ',
+          `Page has ${inputCount} form controls — field matching requires label resolution on this specific page's markup`,
+        );
       } else {
         fail('No form fields found on page');
       }
@@ -393,7 +467,9 @@ async function main() {
 
     const submitElements = await page.evaluate(() => {
       const elements = [];
-      const allFormElements = document.querySelectorAll('button, input[type="submit"], input[type="button"], a[type="submit"]');
+      const allFormElements = document.querySelectorAll(
+        'button, input[type="submit"], input[type="button"], a[type="submit"]',
+      );
 
       for (const el of allFormElements) {
         const tag = el.tagName.toLowerCase();
@@ -412,7 +488,7 @@ async function main() {
           type: el.getAttribute('type') ?? '',
           text: el.textContent?.trim() ?? '',
           id: el.id || '(none)',
-          class: el.className || '(none)'
+          class: el.className || '(none)',
         });
       }
 
@@ -425,8 +501,8 @@ async function main() {
     }
 
     // Confirm these are NOT in the scraped field list
-    const submitLabelsInScraped = scrapeResult.filter(f =>
-      submitElements.some(s => f.label.includes(s.text) || s.text.includes(f.label))
+    const submitLabelsInScraped = scrapeResult.filter((f) =>
+      submitElements.some((s) => f.label.includes(s.text) || s.text.includes(f.label)),
     );
     if (submitLabelsInScraped.length === 0) {
       pass('No submit-like elements found in scraped field list');
@@ -450,7 +526,6 @@ async function main() {
     console.log(`  Unmatched: ${backendData.unmatched.length}`);
     console.log(`  Submit elements on page: ${submitElements.length} (0 in scraped list)`);
     console.log(`  Token cost: $${backendData.tokenUsage.estimatedCostUsd.toFixed(6)}`);
-
   } catch (err) {
     console.error(`${RED}Error:${RESET}`, err.message);
     if (page) {

@@ -19,7 +19,9 @@ describe('LLM API Integration', () => {
     try {
       const h = await fetch(`${url}/models`, { signal: AbortSignal.timeout(2000) });
       healthOk = h.ok;
-    } catch { /* unreachable */ }
+    } catch {
+      /* unreachable */
+    }
     if (!healthOk) {
       console.warn('⚠ Ollama not reachable — skipping integration test');
       return;
@@ -39,7 +41,7 @@ describe('LLM API Integration', () => {
 
     console.log(`Ollama status: ${resp.status}`);
     const json = (await resp.json()) as Record<string, unknown>;
-    const content = ((json['choices'] as Array<{ message: { content: string } }>)?.[0]?.message?.content ?? '');
+    const content = (json['choices'] as Array<{ message: { content: string } }>)?.[0]?.message?.content ?? '';
     console.log(`Ollama response: ${content}`);
     console.log(`Tokens: ${JSON.stringify(json['usage'])}`);
 
@@ -108,7 +110,7 @@ describe('LLM API Integration', () => {
     }
 
     const json = (await resp.json()) as Record<string, unknown>;
-    const content = ((json['choices'] as Array<{ message: { content: string } }>)?.[0]?.message?.content ?? '');
+    const content = (json['choices'] as Array<{ message: { content: string } }>)?.[0]?.message?.content ?? '';
     console.log(`DeepSeek: ${content}`);
     console.log(`Tokens: ${JSON.stringify(json['usage'])}`);
 

@@ -83,7 +83,12 @@ type CopilotPhase =
   | { readonly phase: 'quick-match'; readonly result: QuickMatchResult }
   | { readonly phase: 'reply'; readonly result: ReplyResult }
   | { readonly phase: 'filling' }
-  | { readonly phase: 'matched'; readonly fields: readonly FormField[]; readonly matches: readonly MatchedField[]; readonly unmatched: readonly string[] };
+  | {
+      readonly phase: 'matched';
+      readonly fields: readonly FormField[];
+      readonly matches: readonly MatchedField[];
+      readonly unmatched: readonly string[];
+    };
 
 // ── Shared Sub-Components (Copilot-scoped) ──────────────────────────
 
@@ -101,12 +106,8 @@ function Spinner(p: { readonly text: string }): JSX.Element {
           margin: '0 auto 12px',
         }}
       />
-      <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: colors.textPrimary }}>
-        {p.text}
-      </p>
-      <p style={{ margin: '6px 0 0', fontSize: '11px', color: colors.textMuted }}>
-        This may take 15–30 seconds
-      </p>
+      <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: colors.textPrimary }}>{p.text}</p>
+      <p style={{ margin: '6px 0 0', fontSize: '11px', color: colors.textMuted }}>This may take 15–30 seconds</p>
       <style>{`@keyframes jhs-spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
@@ -131,9 +132,7 @@ function ErrorPanel(p: {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
           <span style={{ fontSize: '16px' }}>&#9888;</span>
-          <span style={{ fontWeight: 700, color: colors.destructive, fontSize: '13px' }}>
-            Error
-          </span>
+          <span style={{ fontWeight: 700, color: colors.destructive, fontSize: '13px' }}>Error</span>
         </div>
         <p style={{ margin: 0, color: '#F48771', fontSize: '12px' }}>{p.state.message}</p>
         {p.state.details && (
@@ -153,7 +152,9 @@ function ErrorPanel(p: {
         {p.state.debug && (
           <div>
             <button
-              onClick={() => { setDbg(!dbg); }}
+              onClick={() => {
+                setDbg(!dbg);
+              }}
               style={{
                 marginTop: '8px',
                 padding: '4px 10px',
@@ -248,7 +249,9 @@ function CopyButton(p: { readonly text: string; readonly label?: string }): JSX.
   const copy = useCallback(async () => {
     if (await copyToClipboard(p.text)) {
       setCopied(true);
-      setTimeout(() => { setCopied(false); }, 1800);
+      setTimeout(() => {
+        setCopied(false);
+      }, 1800);
     }
   }, [p.text]);
 
@@ -272,7 +275,7 @@ function CopyButton(p: { readonly text: string; readonly label?: string }): JSX.
         whiteSpace: 'nowrap',
       }}
     >
-      {copied ? '✓ Copied' : p.label ?? 'Copy'}
+      {copied ? '✓ Copied' : (p.label ?? 'Copy')}
     </button>
   );
 }
@@ -330,7 +333,9 @@ function LinkedInSearchBar(): JSX.Element {
     >
       <select
         value={selected}
-        onChange={(e) => { setSelected((e.target as HTMLSelectElement).value); }}
+        onChange={(e) => {
+          setSelected((e.target as HTMLSelectElement).value);
+        }}
         style={{
           flex: 1,
           padding: '6px 8px',
@@ -550,7 +555,9 @@ function ReplySection(p: {
           Message Reply
         </span>
         <button
-          onClick={() => { setShowInstructions(!showInstructions); }}
+          onClick={() => {
+            setShowInstructions(!showInstructions);
+          }}
           style={{
             fontSize: '10px',
             fontWeight: 500,
@@ -577,19 +584,25 @@ function ReplySection(p: {
           label="Resume"
           icon="📄"
           active={p.contextFlags.resume}
-          onClick={() => { p.onContextToggle('resume'); }}
+          onClick={() => {
+            p.onContextToggle('resume');
+          }}
         />
         <ContextChip
           label="Page"
           icon="💬"
           active={p.contextFlags.page}
-          onClick={() => { p.onContextToggle('page'); }}
+          onClick={() => {
+            p.onContextToggle('page');
+          }}
         />
         <ContextChip
           label="Job"
           icon="💼"
           active={p.contextFlags.job}
-          onClick={() => { p.onContextToggle('job'); }}
+          onClick={() => {
+            p.onContextToggle('job');
+          }}
           disabled={!p.hasJob}
         />
       </div>
@@ -597,7 +610,9 @@ function ReplySection(p: {
       {showInstructions && (
         <textarea
           value={p.customInstructions}
-          onInput={(e) => { p.onCustomInstructionsChange((e.target as HTMLTextAreaElement).value); }}
+          onInput={(e) => {
+            p.onCustomInstructionsChange((e.target as HTMLTextAreaElement).value);
+          }}
           placeholder="Optional: tone, length, things to avoid…"
           style={{
             width: '100%',
@@ -620,7 +635,9 @@ function ReplySection(p: {
 
       <textarea
         value={p.replyPrompt}
-        onInput={(e) => { p.onReplyChange((e.target as HTMLTextAreaElement).value); }}
+        onInput={(e) => {
+          p.onReplyChange((e.target as HTMLTextAreaElement).value);
+        }}
         placeholder={`What should the reply say? (e.g. "I'm interested but my salary expectation is 90k")`}
         style={{
           width: '100%',
@@ -723,9 +740,7 @@ function GeneratedPanel(p: {
             marginBottom: '8px',
           }}
         >
-          <span style={{ fontSize: '13px', fontWeight: 700, color: headerFg }}>
-            {title}
-          </span>
+          <span style={{ fontSize: '13px', fontWeight: 700, color: headerFg }}>{title}</span>
           <CopyButton text={text} />
         </div>
         <pre
@@ -783,10 +798,8 @@ function GeneratedPanel(p: {
 function QuickMatchPanel(p: { readonly result: QuickMatchResult; readonly onClear: () => void }): JSX.Element {
   const r = p.result;
   const scoreColor = r.score >= 7 ? colors.green : r.score >= 4 ? colors.orange : colors.destructive;
-  const scoreBg =
-    r.score >= 7 ? colors.greenBg : r.score >= 4 ? colors.orangeBg : colors.destructiveBg;
-  const scoreBorder =
-    r.score >= 7 ? colors.greenBorder : r.score >= 4 ? '#FED7AA' : colors.destructiveBorder;
+  const scoreBg = r.score >= 7 ? colors.greenBg : r.score >= 4 ? colors.orangeBg : colors.destructiveBg;
+  const scoreBorder = r.score >= 7 ? colors.greenBorder : r.score >= 4 ? '#FED7AA' : colors.destructiveBorder;
 
   return (
     <div>
@@ -808,12 +821,8 @@ function QuickMatchPanel(p: { readonly result: QuickMatchResult; readonly onClea
           }}
         >
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-            <span style={{ fontSize: '28px', fontWeight: 800, color: scoreColor, lineHeight: 1 }}>
-              {r.score}/10
-            </span>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: scoreColor }}>
-              {r.verdict}
-            </span>
+            <span style={{ fontSize: '28px', fontWeight: 800, color: scoreColor, lineHeight: 1 }}>{r.score}/10</span>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: scoreColor }}>{r.verdict}</span>
           </div>
         </div>
         <ul
@@ -874,9 +883,7 @@ function ReplyPanel(p: { readonly result: ReplyResult; readonly onClear: () => v
             marginBottom: '8px',
           }}
         >
-          <span style={{ fontSize: '13px', fontWeight: 700, color: colors.accent }}>
-            AI Reply
-          </span>
+          <span style={{ fontSize: '13px', fontWeight: 700, color: colors.accent }}>AI Reply</span>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             <TokenBadge usage={p.result.tokenUsage} />
             <CopyButton text={p.result.reply} />
@@ -948,7 +955,8 @@ function MatchedPanel(p: {
         {p.matches.map((m, i) => {
           const label = fl[m.fieldId] ?? m.fieldId;
           const confColor = m.confidence > 0.7 ? colors.green : m.confidence > 0.4 ? colors.orange : colors.destructive;
-          const confBg = m.confidence > 0.7 ? colors.greenBg : m.confidence > 0.4 ? colors.orangeBg : colors.destructiveBg;
+          const confBg =
+            m.confidence > 0.7 ? colors.greenBg : m.confidence > 0.4 ? colors.orangeBg : colors.destructiveBg;
 
           return (
             <div
@@ -1112,9 +1120,7 @@ function EmptyState(p: {
       >
         ◯
       </div>
-      <p style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: colors.textPrimary }}>
-        No job detected
-      </p>
+      <p style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: colors.textPrimary }}>No job detected</p>
       <p
         style={{
           margin: '6px 0 16px',
@@ -1158,7 +1164,9 @@ function EmptyState(p: {
         }}
       >
         <button
-          onClick={() => { p.onNavigate('presets'); }}
+          onClick={() => {
+            p.onNavigate('presets');
+          }}
           style={{
             padding: '6px 8px',
             fontSize: '11px',
@@ -1174,7 +1182,9 @@ function EmptyState(p: {
           Manage Presets →
         </button>
         <button
-          onClick={() => { p.onNavigate('settings'); }}
+          onClick={() => {
+            p.onNavigate('settings');
+          }}
           style={{
             padding: '6px 8px',
             fontSize: '11px',
@@ -1196,9 +1206,7 @@ function EmptyState(p: {
 
 // ── Copilot View ─────────────────────────────────────────────────────
 
-export function CopilotView(p: {
-  readonly onNavigate: (view: ViewKey) => void;
-}): JSX.Element {
+export function CopilotView(p: { readonly onNavigate: (view: ViewKey) => void }): JSX.Element {
   const [state, setState] = useState<CopilotPhase>({ phase: 'idle' });
   const [replyPrompt, setReplyPrompt] = useState('');
   const [prmReplyAdd, setPrmReplyAdd] = useState('');
@@ -1208,35 +1216,38 @@ export function CopilotView(p: {
   const [presets, setPresets] = useState<readonly Preset[]>([]);
 
   useEffect(() => {
-    browser.storage.local.get([SK_RESULT, SK_QUICK, SK_REPLY, SK_FIELDS, SK_MATCHES, SK_UNMATCHED, SK_REPLY_CTX, 'llmConfig'], (r) => {
-      const s = r as Record<string, unknown>;
-      if (s[SK_RESULT]) setState({ phase: 'generated', result: s[SK_RESULT] as GenerationResult });
-      else if (s[SK_QUICK]) setState({ phase: 'quick-match', result: s[SK_QUICK] as QuickMatchResult });
-      else if (s[SK_REPLY]) setState({ phase: 'reply', result: s[SK_REPLY] as ReplyResult });
-      else if (s[SK_FIELDS] && s[SK_MATCHES]) {
-        setState({
-          phase: 'matched',
-          fields: s[SK_FIELDS] as readonly FormField[],
-          matches: s[SK_MATCHES] as readonly MatchedField[],
-          unmatched: Array.isArray(s[SK_UNMATCHED]) ? s[SK_UNMATCHED] as readonly string[] : [],
-        });
-      }
-      const cfg = s.llmConfig;
-      if (cfg && typeof cfg === 'object' && cfg !== null) {
-        const v = (cfg as Record<string, unknown>).prmReplyAdd;
-        if (typeof v === 'string') setPrmReplyAdd(v);
-      }
-      const savedCtx = s[SK_REPLY_CTX];
-      if (savedCtx && typeof savedCtx === 'object' && savedCtx !== null) {
-        const sc = savedCtx as Record<string, unknown>;
-        setContextFlags((prev) => ({
-          resume: typeof sc.resume === 'boolean' ? Boolean(sc.resume) : prev.resume,
-          page: typeof sc.page === 'boolean' ? Boolean(sc.page) : prev.page,
-          job: typeof sc.job === 'boolean' ? Boolean(sc.job) : prev.job,
-        }));
-      }
-      setReplySettingsHydrated(true);
-    });
+    browser.storage.local.get(
+      [SK_RESULT, SK_QUICK, SK_REPLY, SK_FIELDS, SK_MATCHES, SK_UNMATCHED, SK_REPLY_CTX, 'llmConfig'],
+      (r) => {
+        const s = r as Record<string, unknown>;
+        if (s[SK_RESULT]) setState({ phase: 'generated', result: s[SK_RESULT] as GenerationResult });
+        else if (s[SK_QUICK]) setState({ phase: 'quick-match', result: s[SK_QUICK] as QuickMatchResult });
+        else if (s[SK_REPLY]) setState({ phase: 'reply', result: s[SK_REPLY] as ReplyResult });
+        else if (s[SK_FIELDS] && s[SK_MATCHES]) {
+          setState({
+            phase: 'matched',
+            fields: s[SK_FIELDS] as readonly FormField[],
+            matches: s[SK_MATCHES] as readonly MatchedField[],
+            unmatched: Array.isArray(s[SK_UNMATCHED]) ? (s[SK_UNMATCHED] as readonly string[]) : [],
+          });
+        }
+        const cfg = s.llmConfig;
+        if (cfg && typeof cfg === 'object' && cfg !== null) {
+          const v = (cfg as Record<string, unknown>).prmReplyAdd;
+          if (typeof v === 'string') setPrmReplyAdd(v);
+        }
+        const savedCtx = s[SK_REPLY_CTX];
+        if (savedCtx && typeof savedCtx === 'object' && savedCtx !== null) {
+          const sc = savedCtx as Record<string, unknown>;
+          setContextFlags((prev) => ({
+            resume: typeof sc.resume === 'boolean' ? Boolean(sc.resume) : prev.resume,
+            page: typeof sc.page === 'boolean' ? Boolean(sc.page) : prev.page,
+            job: typeof sc.job === 'boolean' ? Boolean(sc.job) : prev.job,
+          }));
+        }
+        setReplySettingsHydrated(true);
+      },
+    );
   }, []);
 
   const clearResult = useCallback(() => {
@@ -1264,7 +1275,9 @@ export function CopilotView(p: {
         browser.storage.local.set({ llmConfig: { ...current, prmReplyAdd } });
       });
     }, 400);
-    return () => { window.clearTimeout(timeout); };
+    return () => {
+      window.clearTimeout(timeout);
+    };
   }, [prmReplyAdd, replySettingsHydrated]);
 
   // Persist contextFlags on every toggle so chips survive popup close.
@@ -1398,36 +1411,41 @@ export function CopilotView(p: {
         const sourceUrl = tabs[0]?.url;
         if (!sourceUrl) throw new Error('Could not determine the active page URL.');
 
-        const mr = await new Promise<{ readonly values: readonly MatchedField[]; readonly unmatched: readonly string[] }>(
-          (res, rej) => {
-            browser.runtime.sendMessage(
-              {
-                type: 'backend:matchFormFields',
-                payload: {
-                  fields: fields.map((f) => ({
-                    id: f.id,
-                    label: f.label,
-                    type: f.type,
-                    maxLength: f.maxLength,
-                    options: f.options,
-                  })),
-                  sourceUrl,
-                },
+        const mr = await new Promise<{
+          readonly values: readonly MatchedField[];
+          readonly unmatched: readonly string[];
+        }>((res, rej) => {
+          browser.runtime.sendMessage(
+            {
+              type: 'backend:matchFormFields',
+              payload: {
+                fields: fields.map((f) => ({
+                  id: f.id,
+                  label: f.label,
+                  type: f.type,
+                  maxLength: f.maxLength,
+                  options: f.options,
+                })),
+                sourceUrl,
               },
-              (r: { success: boolean; data?: { values: readonly MatchedField[]; unmatched: readonly string[] }; error?: string }) => {
-                if (browser.runtime.lastError) {
-                  rej(new Error(browser.runtime.lastError.message));
-                  return;
-                }
-                if (!r.success || !r.data) {
-                  rej(new Error(r.error ?? 'Matching failed'));
-                  return;
-                }
-                res(r.data);
-              },
-            );
-          },
-        );
+            },
+            (r: {
+              success: boolean;
+              data?: { values: readonly MatchedField[]; unmatched: readonly string[] };
+              error?: string;
+            }) => {
+              if (browser.runtime.lastError) {
+                rej(new Error(browser.runtime.lastError.message));
+                return;
+              }
+              if (!r.success || !r.data) {
+                rej(new Error(r.error ?? 'Matching failed'));
+                return;
+              }
+              res(r.data);
+            },
+          );
+        });
         browser.storage.local.set({ [SK_FIELDS]: fields, [SK_MATCHES]: mr.values, [SK_UNMATCHED]: mr.unmatched });
         setState({ phase: 'matched', fields, matches: mr.values, unmatched: mr.unmatched });
       } catch (e: unknown) {
@@ -1469,8 +1487,12 @@ export function CopilotView(p: {
             return (
               <div>
                 <IdlePanel
-                  onSummary={() => { generate('summary'); }}
-                  onCover={() => { generate('coverLetter'); }}
+                  onSummary={() => {
+                    generate('summary');
+                  }}
+                  onCover={() => {
+                    generate('coverLetter');
+                  }}
                   onQuickMatch={quickMatch}
                   onFillOnly={fillFormOnly}
                 />
@@ -1490,21 +1512,24 @@ export function CopilotView(p: {
             );
           case 'generating':
             return (
-              <Spinner
-                text={
-                  state.kind === 'coverLetter'
-                    ? 'Writing cover letter...'
-                    : 'Analysing job posting...'
-                }
-              />
+              <Spinner text={state.kind === 'coverLetter' ? 'Writing cover letter...' : 'Analysing job posting...'} />
             );
           case 'error':
-            return <ErrorPanel state={state} onRetry={() => { setState({ phase: 'idle' }); }} />;
+            return (
+              <ErrorPanel
+                state={state}
+                onRetry={() => {
+                  setState({ phase: 'idle' });
+                }}
+              />
+            );
           case 'generated':
             return (
               <GeneratedPanel
                 result={state.result}
-                onRegen={() => { generate(state.result.kind); }}
+                onRegen={() => {
+                  generate(state.result.kind);
+                }}
                 onClear={clearResult}
               />
             );

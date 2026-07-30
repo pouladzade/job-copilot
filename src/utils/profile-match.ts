@@ -26,7 +26,7 @@ export function profileToContext(p: Profile): string {
   const lines: string[] = [];
   const push = (k: string, v: unknown): void => {
     if (v === undefined || v === null || v === '') return;
-    lines.push(`${k}: ${typeof v === "string" ? v : JSON.stringify(v)}`);
+    lines.push(`${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`);
   };
   push('Full Name', p.fullName);
   push('Email', p.contactEmail);
@@ -40,7 +40,8 @@ export function profileToContext(p: Profile): string {
   push('Salary Expectations', p.salaryExpectations);
   push('Notice Period', p.noticePeriod);
   push('Willing to Relocate', p.willingToRelocate);
-  if (typeof p.yearsOfExperience === 'number' && p.yearsOfExperience > 0) lines.push(`Years of Experience: ${p.yearsOfExperience}`);
+  if (typeof p.yearsOfExperience === 'number' && p.yearsOfExperience > 0)
+    lines.push(`Years of Experience: ${p.yearsOfExperience}`);
   push('Current Title', p.currentTitle);
   push('Current Company', p.currentCompany);
   push('Highest Degree', p.highestDegree);
@@ -52,30 +53,123 @@ export function profileToContext(p: Profile): string {
   return lines.length > 0 ? lines.join('\n') : '(no profile data — user has not filled out the profile)';
 }
 
+// F-07: Narrow substring heuristics. A bare "name" no longer auto-maps to the
+// applicant — it only matches when the label asks for the applicant's name
+// (full/your/applicant name, or a label that is exactly "name" with no other
+// subject qualifier). Compound labels like "Company Name", "Reference Name",
+// "School Name", "Project Name" are excluded. Work-authorization now only
+// matches when both the label explicitly asks for the candidate's
+// authorization AND no yes/no/sponsorship keywords appear; a label asking
+// "Do you require sponsorship?" returns null rather than embedding the
+// free-text work authorization value.
+
+const COMPOUND_NAME_EXCLUDE = [
+  'company',
+  'employer',
+  'organization',
+  'organisation',
+  'business',
+  'firm',
+  'school',
+  'university',
+  'college',
+  'institution',
+  'department',
+  'program',
+  'programme',
+  'project',
+  'product',
+  'service',
+  'team',
+  'group',
+  'division',
+  'platform',
+  'reference',
+  'referee',
+  'referrer',
+  'manager',
+  'supervisor',
+  'spouse',
+  'partner',
+  'parent',
+  'child',
+  'emergency',
+  'account',
+  'user',
+  'username',
+  'login',
+  'job',
+  'position',
+  'role',
+  'title',
+  'department',
+  'office',
+  'branch',
+];
+
+const YES_NO_HINTS = ['yes', 'no', 'sponsor', 'require', 'need', 'eligible'];
+
+function isBinaryLabel(label: string): boolean {
+  return YES_NO_HINTS.some((kw) => label.includes(kw));
+}
+
 export function deterministicMatch(label: string, profile: Profile): { value: string; confidence: number } | null {
   const l = label.toLowerCase();
-  if (/\bemail\b|\be[\s-]?mail\b/.test(l) && profile.contactEmail) return { value: profile.contactEmail, confidence: 0.95 };
-  if (/\bphone\b|\btel(?:ephone)?\b|\bmobile\b/.test(l) && profile.contactPhone) return { value: profile.contactPhone, confidence: 0.95 };
-  if (/full[\s_-]?name|your[\s_-]?name|applicant[\s_-]?name|(?:^|\b)name(?:\b|$)/i.test(l) && profile.fullName) return { value: profile.fullName, confidence: 0.95 };
+  if (/\bemail\b|\be[\s-]?mail\b/.test(l) && profile.contactEmail)
+    return { value: profile.contactEmail, confidence: 0.95 };
+  if (/\bphone\b|\btel(?:ephone)?\b|\bmobile\b/.test(l) && profile.contactPhone)
+    return { value: profile.contactPhone, confidence: 0.95 };
+  if (/full[\s_-]?name|your[\s_-]?name|applicant[\s_-]?name/.test(l) && profile.fullName)
+    return { value: profile.fullName, confidence: 0.95 };
+  // Bare "name" — only if no compound subject qualifier is present.
+  if (/^(?:.*\b)?name\b/i.test(l) && profile.fullName) {
+    const stripped = l.replace(/name/g, '').trim();
+    const hasCompound = COMPOUND_NAME_EXCLUDE.some((w) => new RegExp(`\\b${w}\\b`).test(stripped));
+    if (!hasCompound && (stripped === '' || stripped.length < 12)) {
+      return { value: profile.fullName, confidence: 0.85 };
+    }
+  }
   if (l.includes('linkedin') && profile.linkedin) return { value: profile.linkedin, confidence: 0.95 };
   if (l.includes('github') && profile.githubUrl) return { value: profile.githubUrl, confidence: 0.95 };
-  if (/portfolio|website|personal[\s_-]?url/.test(l) && profile.portfolioUrl) return { value: profile.portfolioUrl, confidence: 0.95 };
-  if (/city|\blocation\b|currently[\s_-]?(?:located|based)/.test(l) && profile.city) return { value: profile.city, confidence: 0.85 };
+  if (/portfolio|website|personal[\s_-]?url/.test(l) && profile.portfolioUrl)
+    return { value: profile.portfolioUrl, confidence: 0.95 };
+  if (/city|\blocation\b|currently[\s_-]?(?:located|based)/.test(l) && profile.city)
+    return { value: profile.city, confidence: 0.85 };
   if (/state|region|province/.test(l) && profile.state) return { value: profile.state, confidence: 0.85 };
   if (/\bcountry\b/.test(l) && profile.preferredLocation) return { value: profile.preferredLocation, confidence: 0.7 };
-  const workAuth = /(?:authoriz|authoris|sponsor|visa|eligible|eligib|right to work|work permit|immigration)/.test(l);
-  const workContext = /(?:work|employ|status|country|require|need|status)/.test(l);
-  if (workAuth && workContext && profile.workAuthorization) return { value: profile.workAuthorization, confidence: 0.9 };
+
+  // Work authorization: require an explicit applicant-status label AND skip
+  // yes/no/sponsorship variants. The previous broad pattern would inject a
+  // free-text status ("EU Blue Card") into a sponsorship yes/no question.
+  const workAuth =
+    /(?:authoriz|authoris|work[\s_-]?permit|immigration[\s_-]?status|visa[\s_-]?status|right[\s_-]?to[\s_-]?work|citizen(?:ship)?[\s_-]?status)/.test(
+      l,
+    );
+  if (workAuth && !isBinaryLabel(l) && profile.workAuthorization) {
+    return { value: profile.workAuthorization, confidence: 0.9 };
+  }
+
   if (/notice[\s_-]?period/.test(l) && profile.noticePeriod) return { value: profile.noticePeriod, confidence: 0.9 };
-  if (/salary|compensation|expectation/.test(l) && profile.salaryExpectations) return { value: profile.salaryExpectations, confidence: 0.9 };
+  if (/salary|compensation|expectation/.test(l) && profile.salaryExpectations)
+    return { value: profile.salaryExpectations, confidence: 0.9 };
   if (l.includes('relocate') && profile.willingToRelocate) return { value: profile.willingToRelocate, confidence: 0.9 };
-  if (/years?(?:[\s_-]?of)?[\s_-]?experience/.test(l) && typeof profile.yearsOfExperience === 'number' && profile.yearsOfExperience > 0) return { value: String(profile.yearsOfExperience), confidence: 0.9 };
-  if (/current[\s_-]?(?:job[\s_-]?)?title/.test(l) && profile.currentTitle) return { value: profile.currentTitle, confidence: 0.85 };
-  if (/current[\s_-]?(?:employer|company)/.test(l) && profile.currentCompany) return { value: profile.currentCompany, confidence: 0.85 };
-  if (/(?:highest|education|degree)/.test(l) && profile.highestDegree) return { value: profile.highestDegree, confidence: 0.85 };
+  if (
+    /years?(?:[\s_-]?of)?[\s_-]?experience/.test(l) &&
+    typeof profile.yearsOfExperience === 'number' &&
+    profile.yearsOfExperience > 0
+  )
+    return { value: String(profile.yearsOfExperience), confidence: 0.9 };
+  if (/current[\s_-]?(?:job[\s_-]?)?title/.test(l) && profile.currentTitle)
+    return { value: profile.currentTitle, confidence: 0.85 };
+  if (/current[\s_-]?(?:employer|company)/.test(l) && profile.currentCompany)
+    return { value: profile.currentCompany, confidence: 0.85 };
+  if (/(?:highest|education|degree)/.test(l) && profile.highestDegree)
+    return { value: profile.highestDegree, confidence: 0.85 };
   if (/university|college|school/.test(l) && profile.university) return { value: profile.university, confidence: 0.85 };
-  if (/field[\s_-]?(?:of[\s_-]?study|major)/.test(l) && profile.fieldOfStudy) return { value: profile.fieldOfStudy, confidence: 0.85 };
-  if (/remote|work[\s_-]?mode|on[\s_-]?site|hybrid/.test(l) && profile.remotePreference) return { value: profile.remotePreference, confidence: 0.85 };
+  if (/field[\s_-]?(?:of[\s_-]?study|major)/.test(l) && profile.fieldOfStudy)
+    return { value: profile.fieldOfStudy, confidence: 0.85 };
+  if (/remote|work[\s_-]?mode|on[\s_-]?site|hybrid/.test(l) && profile.remotePreference)
+    return { value: profile.remotePreference, confidence: 0.85 };
   return null;
 }
 
@@ -85,6 +179,8 @@ export async function getProfile(): Promise<Profile> {
     const s = r as Record<string, unknown>;
     const p = s.profile;
     if (p && typeof p === 'object' && p !== null) return p;
-  } catch { /* fall through */ }
+  } catch {
+    /* fall through */
+  }
   return {};
 }

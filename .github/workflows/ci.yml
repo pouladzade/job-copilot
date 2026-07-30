@@ -27,14 +27,11 @@ jobs:
       - name: TypeCheck
         run: pnpm run typecheck
 
-      - name: Build (Chrome)
-        run: pnpm run build
+      - name: Lint
+        run: pnpm run lint
 
-      - name: Build (Firefox)
-        run: pnpm run build:firefox
-
-      - name: Build (Safari)
-        run: pnpm run build:safari
+      - name: Format check
+        run: pnpm run format:check
 
       - name: Test
         run: pnpm run test:ci
@@ -44,6 +41,13 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
+      # F-10: Run the full multi-target build once via `pnpm build` (which
+      # already produces chrome, firefox, and safari outputs). The old flow
+      # invoked the parent build and then rebuilt firefox/safari separately,
+      # producing redundant work and weaker artifact provenance.
+      - name: Build (Chrome + Firefox + Safari)
+        run: pnpm run build
+
       - name: Verify extension output
         run: |
           test -d .output/chrome-mv3
@@ -52,3 +56,7 @@ jobs:
           test -f .output/firefox-mv3/manifest.json
           test -d .output/safari-mv3
           test -f .output/safari-mv3/manifest.json
+
+      # F-14: programmatic manifest contract check on each browser output.
+      - name: Verify manifests
+        run: pnpm run test:manifest

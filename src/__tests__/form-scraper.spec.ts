@@ -268,10 +268,11 @@ describe('scrapeFormFieldsWithMap', () => {
       const result = scrapeFormFieldsWithMap();
 
       expect(result.fields[0]?.id).toBe('field_0');
-      expect(result.selectorMap['field_0']).toBe('#email');
+      // Selectors prefer name so the filler can detect duplicate-name injection (F-01).
+      expect(result.selectorMap['field_0']).toBe('input[name="email"]');
     });
 
-    it('falls back to name-based selector when no id', () => {
+    it('falls back to name-based selector when no id, disambiguating by identity at fill time (F-05)', () => {
       setBodyHtml(`
         <form>
           <input name="full_name" placeholder="Name" />
@@ -280,7 +281,26 @@ describe('scrapeFormFieldsWithMap', () => {
 
       const result = scrapeFormFieldsWithMap();
 
-      expect(result.selectorMap['field_0']).toBe('[name="full_name"]');
+      // The selector targets the named control; identity disambiguation in
+      // fillField() picks the right element when several share a name (F-05).
+      expect(result.selectorMap['field_0']).toBe('input[name="full_name"]');
+    });
+
+    it('produces an identity that uniquely distinguishes duplicate-name controls (F-05/F-01)', () => {
+      setBodyHtml(`
+        <form>
+          <input name="email" placeholder="Personal" />
+          <input name="email" placeholder="Work" />
+        </form>
+      `);
+
+      const result = scrapeFormFieldsWithMap();
+      expect(result.fields.length).toBe(2);
+      // Both fields share the same selector but carry different identity
+      // signatures (position + label) so the filler can disambiguate.
+      expect(result.fields[0]?.selector).toBe(result.fields[1]?.selector);
+      expect(result.fields[0]?.identity.positionInForm).not.toBe(result.fields[1]?.identity.positionInForm);
+      expect(result.fields[0]?.identity.label).not.toBe(result.fields[1]?.identity.label);
     });
   });
 

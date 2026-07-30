@@ -77,10 +77,7 @@ function Field(p: {
 
 // ── Unsaved Changes Dialog ──────────────────────────────────────────
 
-function UnsavedDialog(p: {
-  readonly onStay: () => void;
-  readonly onDiscard: () => void;
-}): JSX.Element {
+function UnsavedDialog(p: { readonly onStay: () => void; readonly onDiscard: () => void }): JSX.Element {
   return (
     <div
       style={{
@@ -111,10 +108,7 @@ function UnsavedDialog(p: {
           You have unsaved changes. Save before leaving or discard them.
         </p>
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-          <button
-            onClick={p.onStay}
-            style={smallBtn(colors.surface, colors.textSecondary, colors.border)}
-          >
+          <button onClick={p.onStay} style={smallBtn(colors.surface, colors.textSecondary, colors.border)}>
             Stay
           </button>
           <button
@@ -239,38 +233,46 @@ export function SettingsView(): JSX.Element {
   }, []);
 
   // ── Resume helpers ──
-  const switchResume = useCallback((id: string) => {
-    const entry = resumes.find((r) => r.id === id);
-    if (!entry) return;
-    setSelectedResumeId(id);
-    setResumeName(entry.name);
-    setResumeContent(entry.content);
-    setResumeProfile(entry.profile);
-  }, [resumes]);
+  const switchResume = useCallback(
+    (id: string) => {
+      const entry = resumes.find((r) => r.id === id);
+      if (!entry) return;
+      setSelectedResumeId(id);
+      setResumeName(entry.name);
+      setResumeContent(entry.content);
+      setResumeProfile(entry.profile);
+    },
+    [resumes],
+  );
 
-  const updateResumeName = useCallback((name: string) => {
-    setResumeName(name);
-    setResumes((prev) =>
-      prev.map((r) => (r.id === selectedResumeId ? { ...r, name, updatedAt: Date.now() } : r)),
-    );
-  }, [selectedResumeId]);
+  const updateResumeName = useCallback(
+    (name: string) => {
+      setResumeName(name);
+      setResumes((prev) => prev.map((r) => (r.id === selectedResumeId ? { ...r, name, updatedAt: Date.now() } : r)));
+    },
+    [selectedResumeId],
+  );
 
-  const updateResumeContent = useCallback((content: string) => {
-    setResumeContent(content);
-    setResumes((prev) =>
-      prev.map((r) => (r.id === selectedResumeId ? { ...r, content, updatedAt: Date.now() } : r)),
-    );
-  }, [selectedResumeId]);
+  const updateResumeContent = useCallback(
+    (content: string) => {
+      setResumeContent(content);
+      setResumes((prev) => prev.map((r) => (r.id === selectedResumeId ? { ...r, content, updatedAt: Date.now() } : r)));
+    },
+    [selectedResumeId],
+  );
 
-  const updateResumeProfile = useCallback((k: keyof ProfileData, v: string | number) => {
-    setResumeProfile((p) => {
-      const next = { ...p, [k]: v };
-      setResumes((prev) =>
-        prev.map((r) => (r.id === selectedResumeId ? { ...r, profile: next, updatedAt: Date.now() } : r)),
-      );
-      return next;
-    });
-  }, [selectedResumeId]);
+  const updateResumeProfile = useCallback(
+    (k: keyof ProfileData, v: string | number) => {
+      setResumeProfile((p) => {
+        const next = { ...p, [k]: v };
+        setResumes((prev) =>
+          prev.map((r) => (r.id === selectedResumeId ? { ...r, profile: next, updatedAt: Date.now() } : r)),
+        );
+        return next;
+      });
+    },
+    [selectedResumeId],
+  );
 
   const addResume = useCallback(() => {
     const entry = createResumeEntry('New Resume', '', PROFILE_DEFAULTS);
@@ -345,26 +347,34 @@ export function SettingsView(): JSX.Element {
               return next;
             });
             setParseStatus('success');
-            setTimeout(() => { setParseStatus('idle'); setParseError(''); }, 4000);
+            setTimeout(() => {
+              setParseStatus('idle');
+              setParseError('');
+            }, 4000);
           },
         );
       });
     });
   }, [resumeContent, selectedResumeId]);
 
-  const attemptTabChange = useCallback((next: SettingsTab) => {
-    if (isDirty) {
-      setPendingTab(next);
-      return;
-    }
-    setTab(next);
-  }, [isDirty]);
+  const attemptTabChange = useCallback(
+    (next: SettingsTab) => {
+      if (isDirty) {
+        setPendingTab(next);
+        return;
+      }
+      setTab(next);
+    },
+    [isDirty],
+  );
 
   return (
     <div>
       {pendingTab !== null && (
         <UnsavedDialog
-          onStay={() => { setPendingTab(null); }}
+          onStay={() => {
+            setPendingTab(null);
+          }}
           onDiscard={() => {
             setPendingTab(null);
             if (pendingTab !== null) setTab(pendingTab);
@@ -395,7 +405,9 @@ export function SettingsView(): JSX.Element {
         </p>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
-            onClick={() => { browser.runtime.openOptionsPage(); }}
+            onClick={() => {
+              browser.runtime.openOptionsPage();
+            }}
             style={{
               padding: '4px 10px',
               fontSize: '10px',
@@ -448,7 +460,9 @@ export function SettingsView(): JSX.Element {
               key={t.key}
               role="tab"
               aria-selected={isActive}
-              onClick={() => { attemptTabChange(t.key); }}
+              onClick={() => {
+                attemptTabChange(t.key);
+              }}
               style={{
                 flex: 1,
                 padding: '6px 0',
@@ -530,12 +544,15 @@ export function SettingsView(): JSX.Element {
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap' }}>
             <select
               value={selectedResumeId}
-              onChange={(e) => { switchResume((e.target as HTMLSelectElement).value); }}
+              onChange={(e) => {
+                switchResume((e.target as HTMLSelectElement).value);
+              }}
               style={{ ...inputStyle, width: 'auto', minWidth: '140px', padding: '6px 8px', fontSize: '11px' }}
             >
               {resumes.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.name}{r.id === activeResumeId ? ' ★' : ''}
+                  {r.name}
+                  {r.id === activeResumeId ? ' ★' : ''}
                 </option>
               ))}
             </select>
@@ -543,7 +560,10 @@ export function SettingsView(): JSX.Element {
               + New
             </button>
             {resumes.length > 1 && (
-              <button onClick={deleteResume} style={smallBtn(colors.surface, colors.destructive, colors.destructiveBorder)}>
+              <button
+                onClick={deleteResume}
+                style={smallBtn(colors.surface, colors.destructive, colors.destructiveBorder)}
+              >
                 Delete
               </button>
             )}
@@ -560,7 +580,9 @@ export function SettingsView(): JSX.Element {
             <input
               type="text"
               value={resumeName}
-              onInput={(e) => { updateResumeName((e.target as HTMLInputElement).value); }}
+              onInput={(e) => {
+                updateResumeName((e.target as HTMLInputElement).value);
+              }}
               placeholder="Backend Engineer"
               style={inputStyle}
             />
@@ -570,7 +592,9 @@ export function SettingsView(): JSX.Element {
           <label style={labelStyle}>Resume (Markdown)</label>
           <textarea
             value={resumeContent}
-            onInput={(e) => { updateResumeContent((e.target as HTMLTextAreaElement).value); }}
+            onInput={(e) => {
+              updateResumeContent((e.target as HTMLTextAreaElement).value);
+            }}
             placeholder="Paste your full resume in markdown here..."
             style={{
               ...inputStyle,
@@ -613,7 +637,7 @@ export function SettingsView(): JSX.Element {
                   value={str}
                   onInput={(e) => {
                     const raw = (e.target as HTMLInputElement).value;
-                    if (typeof v === 'number') updateResumeProfile(f.key, raw === '' ? 0 : (parseInt(raw, 10) || 0));
+                    if (typeof v === 'number') updateResumeProfile(f.key, raw === '' ? 0 : parseInt(raw, 10) || 0);
                     else updateResumeProfile(f.key, raw);
                   }}
                   placeholder={f.placeholder ?? ''}
@@ -636,8 +660,7 @@ export function SettingsView(): JSX.Element {
               lineHeight: 1.5,
             }}
           >
-            Add short guidance per template. Base prompts are locked to keep the JSON output
-            structure stable.
+            Add short guidance per template. Base prompts are locked to keep the JSON output structure stable.
           </p>
           {PROMPT_SLOTS.map((slot) => (
             <div key={slot.key} style={{ marginBottom: '12px' }}>

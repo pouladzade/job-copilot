@@ -25,21 +25,14 @@ export function buildLinkedInSearchUrl(config: LinkedInSearchConfig): string {
         ? `"${config.titles[0]}"`
         : '';
 
-  const incStr =
-    config.includedSkills.length > 0
-      ? `(${config.includedSkills.map(quoteIfNeeded).join(' OR ')})`
-      : '';
+  const incStr = config.includedSkills.length > 0 ? `(${config.includedSkills.map(quoteIfNeeded).join(' OR ')})` : '';
 
   const excStr =
-    config.excludedSkills.length > 0
-      ? `NOT (${config.excludedSkills.map(quoteIfNeeded).join(' OR ')})`
-      : '';
+    config.excludedSkills.length > 0 ? `NOT (${config.excludedSkills.map(quoteIfNeeded).join(' OR ')})` : '';
 
   const incPart = incStr ? `AND ${incStr}` : '';
 
-  const rawKeywords = [titleGroup, incPart, excStr]
-    .filter((segment) => segment !== '')
-    .join(' ');
+  const rawKeywords = [titleGroup, incPart, excStr].filter((segment) => segment !== '').join(' ');
 
   const params = new URLSearchParams();
   params.set('keywords', rawKeywords);

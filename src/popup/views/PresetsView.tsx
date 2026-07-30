@@ -1,12 +1,6 @@
 import { useCallback, useEffect, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
-import {
-  colors,
-  radii,
-  fontFamily,
-  chip,
-  selectStyle,
-} from '../theme';
+import { colors, radii, fontFamily, chip, selectStyle } from '../theme';
 import type { LinkedInSearchConfig } from '../../utils/linkedin-search-builder';
 import { buildLinkedInSearchUrl } from '../../utils/linkedin-search-builder';
 
@@ -229,9 +223,7 @@ function PresetEditorView(p: {
   const [workplaceTypes, setWorkplaceTypes] = useState<readonly ('1' | '2' | '3')[]>(
     p.preset.config.workplaceTypes ?? [],
   );
-  const [experienceLevels, setExperienceLevels] = useState<readonly string[]>(
-    p.preset.config.experienceLevels ?? [],
-  );
+  const [experienceLevels, setExperienceLevels] = useState<readonly string[]>(p.preset.config.experienceLevels ?? []);
   const [jobTypes, setJobTypes] = useState<readonly string[]>(p.preset.config.jobTypes ?? []);
   const [error, setError] = useState('');
 
@@ -350,15 +342,11 @@ function PresetEditorView(p: {
   ]);
 
   const toggleWorkplace = useCallback((val: '1' | '2' | '3') => {
-    setWorkplaceTypes((prev) =>
-      prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val],
-    );
+    setWorkplaceTypes((prev) => (prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val]));
   }, []);
 
   const toggleExperience = useCallback((val: string) => {
-    setExperienceLevels((prev) =>
-      prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val],
-    );
+    setExperienceLevels((prev) => (prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val]));
   }, []);
 
   const toggleJobType = useCallback((val: string) => {
@@ -684,9 +672,7 @@ function PresetEditorView(p: {
 
 export function PresetsView(): JSX.Element {
   const [presets, setPresets] = useState<readonly Preset[]>([]);
-  const [editing, setEditing] = useState<{ readonly name: string; readonly isNew: boolean } | null>(
-    null,
-  );
+  const [editing, setEditing] = useState<{ readonly name: string; readonly isNew: boolean } | null>(null);
 
   const reload = useCallback(() => {
     browser.storage.local.get(['linkedInSearchPresets'], (result) => {

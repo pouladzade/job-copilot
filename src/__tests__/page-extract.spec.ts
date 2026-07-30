@@ -157,7 +157,7 @@ describe('extractWithReadability', () => {
 
     const r = extractWithReadability(document);
     expect(r).not.toBeNull();
-    expect((r?.text.length ?? 0)).toBeGreaterThan(200);
+    expect(r?.text.length ?? 0).toBeGreaterThan(200);
     expect(r?.text.toLowerCase()).toContain('senior engineer');
     expect(r?.text.toLowerCase()).toContain('hiring');
   });
@@ -219,12 +219,24 @@ describe('extraction cache', () => {
 
   it('isolates entries by URL', async () => {
     const a: ExtractionResult = {
-      source: 'jsonld', title: 'A', company: '', location: '', description: 'a', rawText: 'a',
-      url: 'https://example.com/a', ts: 1,
+      source: 'jsonld',
+      title: 'A',
+      company: '',
+      location: '',
+      description: 'a',
+      rawText: 'a',
+      url: 'https://example.com/a',
+      ts: 1,
     };
     const b: ExtractionResult = {
-      source: 'jsonld', title: 'B', company: '', location: '', description: 'b', rawText: 'b',
-      url: 'https://example.com/b', ts: 2,
+      source: 'jsonld',
+      title: 'B',
+      company: '',
+      location: '',
+      description: 'b',
+      rawText: 'b',
+      url: 'https://example.com/b',
+      ts: 2,
     };
     await setCachedExtraction(a);
     await setCachedExtraction(b);

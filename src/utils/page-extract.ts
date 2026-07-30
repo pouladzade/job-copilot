@@ -54,7 +54,10 @@ function flattenJobLocation(loc: unknown): string {
   if (!loc) return '';
   if (typeof loc === 'string') return loc;
   if (Array.isArray(loc)) {
-    return loc.map(flattenJobLocation).filter((s) => s.length > 0).join(' | ');
+    return loc
+      .map(flattenJobLocation)
+      .filter((s) => s.length > 0)
+      .join(' | ');
   }
   if (typeof loc === 'object') {
     const o = loc as Record<string, unknown>;
@@ -67,7 +70,11 @@ function flattenJobLocation(loc: unknown): string {
 function flattenHiringOrganization(org: unknown): string {
   if (!org) return '';
   if (typeof org === 'string') return org;
-  if (Array.isArray(org)) return org.map(flattenHiringOrganization).filter((s) => s.length > 0).join(', ');
+  if (Array.isArray(org))
+    return org
+      .map(flattenHiringOrganization)
+      .filter((s) => s.length > 0)
+      .join(', ');
   if (typeof org === 'object') return asString((org as Record<string, unknown>).name);
   return '';
 }
@@ -88,13 +95,19 @@ function findJobPostingNode(parsed: unknown): Record<string, unknown> | null {
   return null;
 }
 
-export function extractJsonLd(doc: Document): { title: string; company: string; location: string; description: string } | null {
+export function extractJsonLd(
+  doc: Document,
+): { title: string; company: string; location: string; description: string } | null {
   const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
   for (const script of Array.from(scripts)) {
     const text = script.textContent;
     if (!text) continue;
     let parsed: unknown;
-    try { parsed = JSON.parse(text); } catch { continue; }
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      continue;
+    }
     const node = findJobPostingNode(parsed);
     if (!node) continue;
     const title = asString(node.title);
@@ -149,7 +162,9 @@ export function extractWithTreeWalker(doc: Document): string {
   let node: Node | null = walker.nextNode();
   while (node) {
     const el = node as Element;
-    if (['script', 'style', 'nav', 'footer', 'header', 'noscript', 'svg', 'iframe'].includes(el.tagName.toLowerCase())) {
+    if (
+      ['script', 'style', 'nav', 'footer', 'header', 'noscript', 'svg', 'iframe'].includes(el.tagName.toLowerCase())
+    ) {
       node = walker.nextNode();
       continue;
     }
@@ -176,14 +191,18 @@ export async function getCachedExtraction(url: string): Promise<ExtractionResult
     const stored = await browser.storage.session.get(key);
     const v = stored?.[key];
     if (v && typeof v === 'object') return v as ExtractionResult;
-  } catch { /* fall through */ }
+  } catch {
+    /* fall through */
+  }
   return null;
 }
 
 export async function setCachedExtraction(result: ExtractionResult): Promise<void> {
   try {
     await browser.storage.session.set({ [extractionCacheKey(result.url)]: result });
-  } catch { /* quota errors must not break extraction */ }
+  } catch {
+    /* quota errors must not break extraction */
+  }
 }
 
 export async function extractPage(doc: Document, url: string): Promise<ExtractionResult> {

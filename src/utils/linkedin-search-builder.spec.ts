@@ -28,9 +28,7 @@ describe('buildLinkedInSearchUrl', () => {
       });
 
       const decoded = decodeURIComponent(url);
-      expect(decoded).toContain(
-        '("Software+Engineer"+OR+"Senior+Software+Engineer"+OR+"Senior+Architect")',
-      );
+      expect(decoded).toContain('("Software+Engineer"+OR+"Senior+Software+Engineer"+OR+"Senior+Architect")');
     });
 
     it('produces an empty keywords group when titles is empty', () => {

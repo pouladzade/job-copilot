@@ -6,8 +6,7 @@ import { resolve } from 'path';
 const manifest: UserManifestFn = ({ browser, manifest: generated }) => {
   const base = {
     name: 'AI Job Copilot',
-    description:
-      'Local-first AI job application assistant. Scrapes, tailors, and fills — never submits.',
+    description: 'Local-first AI job application assistant. Scrapes, tailors, and fills — never submits.',
     permissions: ['activeTab', 'storage', 'scripting'],
     host_permissions: ['<all_urls>'],
     icons: {

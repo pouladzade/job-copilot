@@ -177,7 +177,8 @@ describe('form-filler edge cases', () => {
     expect(el.value.length).toBe(5000);
   });
 
-  it('selects fallback option when value does not match', () => {
+  it('does NOT mutate select when value does not match (F-06)', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     setBodyHtml(`
       <select id="x">
         <option value="">--</option>
@@ -186,9 +187,14 @@ describe('form-filler edge cases', () => {
       </select>
     `);
     setActiveSelectorMap({ field_0: '#x' });
-    fillField({ id: 'field_0', label: 'X', type: 'select', selector: '#x', maxLength: 0, options: ['Yes', 'No'] }, 'maybe');
+    const status = fillField(
+      { id: 'field_0', label: 'X', type: 'select', selector: '#x', maxLength: 0, options: ['Yes', 'No'] },
+      'maybe',
+    );
     const el = document.getElementById('x') as HTMLSelectElement;
-    expect(el.selectedIndex).toBe(1);
+    expect(status).toBe('unmatched-select');
+    expect(el.selectedIndex).toBe(0); // unchanged — placeholder still selected
+    warnSpy.mockRestore();
   });
 
   it('fills radio group by name when selector does not contain name', () => {
@@ -197,7 +203,10 @@ describe('form-filler edge cases', () => {
       <input type="radio" name="auth" id="auth_no" value="no" />
     `);
     setActiveSelectorMap({ field_0: '#auth_yes' });
-    fillField({ id: 'field_0', label: 'Auth', type: 'radio', selector: '#auth_yes', maxLength: 0, options: ['yes', 'no'] }, 'no');
+    fillField(
+      { id: 'field_0', label: 'Auth', type: 'radio', selector: '#auth_yes', maxLength: 0, options: ['yes', 'no'] },
+      'no',
+    );
     const noEl = document.getElementById('auth_no') as HTMLInputElement;
     expect(noEl.checked).toBe(true);
   });
@@ -322,7 +331,13 @@ describe('profile-match edge cases', () => {
   it('getProfile returns empty object when storage throws', async () => {
     const originalChrome = (globalThis as Record<string, unknown>)['chrome'];
     (globalThis as Record<string, unknown>)['chrome'] = {
-      storage: { local: { get: () => { throw new Error('fail'); } } },
+      storage: {
+        local: {
+          get: () => {
+            throw new Error('fail');
+          },
+        },
+      },
     };
     (globalThis as Record<string, unknown>)['browser'] = (globalThis as Record<string, unknown>)['chrome'];
     const p = await getProfile();
@@ -337,7 +352,11 @@ describe('profile-match edge cases', () => {
   });
 
   it('skips undefined/null/empty values in context', () => {
-    const ctx = profileToContext({ fullName: '', contactEmail: null as unknown as string, city: undefined as unknown as string });
+    const ctx = profileToContext({
+      fullName: '',
+      contactEmail: null as unknown as string,
+      city: undefined as unknown as string,
+    });
     expect(ctx).not.toContain('Full Name');
     expect(ctx).not.toContain('Email');
     expect(ctx).not.toContain('City');
