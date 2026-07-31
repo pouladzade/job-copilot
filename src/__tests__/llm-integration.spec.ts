@@ -39,11 +39,11 @@ describe('LLM API Integration', () => {
       signal: AbortSignal.timeout(4000),
     });
 
-    console.log(`Ollama status: ${resp.status}`);
+    console.warn(`Ollama status: ${resp.status}`);
     const json = (await resp.json()) as Record<string, unknown>;
     const content = (json['choices'] as Array<{ message: { content: string } }>)?.[0]?.message?.content ?? '';
-    console.log(`Ollama response: ${content}`);
-    console.log(`Tokens: ${JSON.stringify(json['usage'])}`);
+    console.warn(`Ollama response: ${content}`);
+    console.warn(`Tokens: ${JSON.stringify(json['usage'])}`);
 
     expect(resp.ok).toBe(true);
     expect(content).toContain('ok');
@@ -69,8 +69,8 @@ describe('LLM API Integration', () => {
     });
 
     const body = await resp.text().catch(() => 'No body');
-    console.log(`Fake key returned: ${resp.status}`);
-    console.log(`Response body: ${body.slice(0, 300)}`);
+    console.warn(`Fake key returned: ${resp.status}`);
+    console.warn(`Response body: ${body.slice(0, 300)}`);
 
     expect(resp.ok).toBe(false);
     expect([401, 403]).toContain(resp.status);
@@ -111,8 +111,8 @@ describe('LLM API Integration', () => {
 
     const json = (await resp.json()) as Record<string, unknown>;
     const content = (json['choices'] as Array<{ message: { content: string } }>)?.[0]?.message?.content ?? '';
-    console.log(`DeepSeek: ${content}`);
-    console.log(`Tokens: ${JSON.stringify(json['usage'])}`);
+    console.warn(`DeepSeek: ${content}`);
+    console.warn(`Tokens: ${JSON.stringify(json['usage'])}`);
 
     expect(resp.ok).toBe(true);
     expect(content).toContain('ok');
