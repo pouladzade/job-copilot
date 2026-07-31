@@ -107,14 +107,6 @@ describe('form-fill integration (browser simulation)', () => {
     const result = scrapeFormFieldsWithMap();
     setActiveSelectorMap(result.selectorMap);
 
-    console.warn('=== STEP 1: Scraped field list ===');
-    for (const f of result.fields) {
-      console.warn(
-        `  ${f.id}: type=${f.type}, label="${f.label}", maxLength=${f.maxLength}, options=[${f.options.join(', ')}]`,
-      );
-    }
-    console.warn(`  Total: ${result.fields.length} fields`);
-
     // Check: we expect 11 real fields (not counting submit/reset elements)
     expect(result.fields.length).toBe(11);
 
@@ -146,14 +138,11 @@ describe('form-fill integration (browser simulation)', () => {
     const result = scrapeFormFieldsWithMap();
     setActiveSelectorMap(result.selectorMap);
 
-    console.warn('\n=== STEP 2: Filling fields ===');
-
     // Fill each matched value
     for (const match of MOCK_MATCHES) {
       const field = result.fields.find((f) => f.id === match.fieldId);
       if (field !== undefined) {
         fillField(field, match.value);
-        console.warn(`  Filled ${field.id} (${field.label}) = "${match.value}"`);
       }
     }
 
@@ -181,8 +170,6 @@ describe('form-fill integration (browser simulation)', () => {
     // Textarea
     const bioTextarea = document.querySelector('#bio') as HTMLTextAreaElement;
     expect(bioTextarea.value).toBe('I am a software engineer with 7 years of experience.');
-
-    console.warn('  All field values verified in DOM ✓');
   });
 
   it('step 3 — revertAll() restores original values', () => {
@@ -209,7 +196,6 @@ describe('form-fill integration (browser simulation)', () => {
 
     // Revert
     const reverted = revertAll();
-    console.warn(`\n=== STEP 3: Reverted ${reverted} fields ===`);
 
     // Verify reverted
     expect(reverted).toBeGreaterThan(0);
@@ -223,8 +209,6 @@ describe('form-fill integration (browser simulation)', () => {
 
     const bioTextarea = document.querySelector('#bio') as HTMLTextAreaElement;
     expect(bioTextarea.value).toBe('');
-
-    console.warn('  All fields reverted to original values ✓');
   });
 
   it('step 4 — submit-type elements confirmed absent from field list', () => {
@@ -235,10 +219,6 @@ describe('form-fill integration (browser simulation)', () => {
     const labels = result.fields.map((f) => f.label);
     const ids = result.fields.map((f) => f.id);
 
-    console.warn('\n=== STEP 4: Submit-element exclusion check ===');
-    console.warn(`  Field labels: [${labels.join(', ')}]`);
-    console.warn(`  Field IDs: [${ids.join(', ')}]`);
-
     // The page has <button type="submit">, <input type="reset">, and a cancel <a>
     // None should appear
     expect(labels).not.toContain('Submit Application');
@@ -248,7 +228,5 @@ describe('form-fill integration (browser simulation)', () => {
     // Check: no element with id="submit-btn" should appear
     const submitButtonInFields = result.fields.some((f) => f.id === 'submit-btn' || f.label === 'Submit Application');
     expect(submitButtonInFields).toBe(false);
-
-    console.warn('  No submit/reset/cancel elements in scraped field list ✓');
   });
 });

@@ -11,6 +11,14 @@ function setBodyHtml(html: string): void {
   document.body.innerHTML = html;
 }
 
+beforeEach(() => {
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
 function loadFixture(): void {
   setBodyHtml(`
     <form id="application-form">

@@ -7,7 +7,6 @@
 describe('LLM API Integration', () => {
   it('Ollama /v1/chat/completions works without auth', async () => {
     if (process.env['RUN_OLLAMA_INTEGRATION'] !== '1') {
-      console.warn('Ollama integration disabled — set RUN_OLLAMA_INTEGRATION=1 to run');
       return;
     }
 
@@ -23,7 +22,6 @@ describe('LLM API Integration', () => {
       /* unreachable */
     }
     if (!healthOk) {
-      console.warn('⚠ Ollama not reachable — skipping integration test');
       return;
     }
 
@@ -39,11 +37,8 @@ describe('LLM API Integration', () => {
       signal: AbortSignal.timeout(4000),
     });
 
-    console.warn(`Ollama status: ${resp.status}`);
     const json = (await resp.json()) as Record<string, unknown>;
     const content = (json['choices'] as Array<{ message: { content: string } }>)?.[0]?.message?.content ?? '';
-    console.warn(`Ollama response: ${content}`);
-    console.warn(`Tokens: ${JSON.stringify(json['usage'])}`);
 
     expect(resp.ok).toBe(true);
     expect(content).toContain('ok');
@@ -69,8 +64,7 @@ describe('LLM API Integration', () => {
     });
 
     const body = await resp.text().catch(() => 'No body');
-    console.warn(`Fake key returned: ${resp.status}`);
-    console.warn(`Response body: ${body.slice(0, 300)}`);
+    void body;
 
     expect(resp.ok).toBe(false);
     expect([401, 403]).toContain(resp.status);
@@ -81,7 +75,6 @@ describe('LLM API Integration', () => {
     // The extension would read it from chrome.storage.local
     const apiKey = process.env['LLM_API_KEY'];
     if (!apiKey) {
-      console.warn('⚠ LLM_API_KEY not set — skipping real DeepSeek test');
       return;
     }
 
@@ -111,8 +104,6 @@ describe('LLM API Integration', () => {
 
     const json = (await resp.json()) as Record<string, unknown>;
     const content = (json['choices'] as Array<{ message: { content: string } }>)?.[0]?.message?.content ?? '';
-    console.warn(`DeepSeek: ${content}`);
-    console.warn(`Tokens: ${JSON.stringify(json['usage'])}`);
 
     expect(resp.ok).toBe(true);
     expect(content).toContain('ok');
