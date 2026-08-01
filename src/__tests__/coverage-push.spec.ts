@@ -18,6 +18,11 @@ describe('form-filler branch coverage', () => {
   beforeEach(() => {
     setBodyHtml('');
     setActiveSelectorMap({});
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('currentNameMatchCount falls back to tag=input when identity.tag is missing', () => {
