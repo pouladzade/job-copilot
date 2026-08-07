@@ -1,7 +1,7 @@
 import { defineConfig } from 'wxt';
 import type { UserManifestFn } from 'wxt';
+import type { Plugin } from 'vite';
 import preact from '@preact/preset-vite';
-import { resolve } from 'path';
 
 const manifest: UserManifestFn = ({ browser, manifest: generated }) => {
   const base = {
@@ -17,14 +17,16 @@ const manifest: UserManifestFn = ({ browser, manifest: generated }) => {
     },
   };
 
-  const result = {
+  const result: Record<string, unknown> = {
     ...(generated ?? {}),
     ...base,
-    options_ui: {
-      ...(generated?.options_ui ?? {}),
-      open_in_tab: true,
-    },
   };
+
+  // WXT auto-generates options_ui from entrypoints/options/
+  // Replace with options_page so the browser always opens settings in a full tab
+  // (Chrome's options_ui can still show inline even with open_in_tab: true)
+  delete result.options_ui;
+  result.options_page = 'options.html';
 
   if (browser === 'firefox') {
     return {
@@ -38,16 +40,30 @@ const manifest: UserManifestFn = ({ browser, manifest: generated }) => {
           },
         },
       },
-    };
+    } as ReturnType<UserManifestFn>;
   }
 
-  return result;
+  return result as ReturnType<UserManifestFn>;
 };
+
+/**
+ * Vite adds crossorigin attributes to module scripts for CORS preloading.
+ * In a chrome-extension:// context, these are unnecessary and can cause
+ * loading issues. This plugin strips them from the generated HTML.
+ */
+function stripCrossorigin(): Plugin {
+  return {
+    name: 'strip-crossorigin',
+    transformIndexHtml(html) {
+      return html.replace(/\scrossorigin(?:=["'][^"']*["'])?/g, '');
+    },
+  };
+}
 
 export default defineConfig({
   srcDir: '.',
   manifest,
   vite: () => ({
-    plugins: [preact()],
+    plugins: [preact(), stripCrossorigin()],
   }),
 });
